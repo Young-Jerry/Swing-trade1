@@ -1,30 +1,74 @@
 /* General Reset */
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
 body { background: #111; color: #fff; min-height: 100vh; }
-.container { display: flex; gap: 40px; padding: 30px; }
+.container { display: flex; gap: 40px; padding: 20px; height: 100vh; overflow: hidden; }
 
 /* Left Panel */
-.checklist { flex: 1; background: #1e1e1e; padding: 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+.checklist {
+  flex: 1;
+  background: #1e1e1e;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  overflow-y: scroll;
+  height: 100%;
+}
 .checklist h1 { color: #00c6ff; margin-bottom: 20px; font-size: 1.8rem; }
 .check-group { margin-bottom: 20px; }
-.check-group h3 { margin-bottom: 10px; color: #00ff72; }
+.header { display: flex; justify-content: space-between; align-items: center; }
+.check-group h3 { color: #3399ff; }
 .checkbox { display: flex; align-items: center; margin-bottom: 8px; font-size: 1.1rem; cursor: pointer; user-select: none; padding: 6px 10px; border-radius: 8px; transition: 0.2s; }
-.checkbox input { margin-right: 10px; transform: scale(1.5); }
-.checkbox:hover { background: rgba(0,255,114,0.1); }
-.checkbox.orange { color: orange; }
+.checkbox input { margin-right: 10px; transform: scale(1.4); }
+.checkbox:hover { background: rgba(51,153,255,0.1); }
+.ema9 { color: orange; font-weight: 600; }
+.ema26 { color: green; font-weight: 600; }
 .checkbox.green { color: #00ff72; }
 .checkbox.red { color: red; }
-.checkbox.white { color: white; }
+.checkbox.white { color: #fff; }
 .checkbox.positive { color: #00ff72; }
 .checkbox.neutral { color: #ffff66; }
 .checkbox.negative { color: red; }
-.checkbox select { margin-left: 10px; padding: 2px 6px; border-radius: 6px; background: #2a2a2a; color: #fff; border: none; }
-button { margin-top: 20px; padding: 10px 20px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; color: #fff; background: linear-gradient(45deg, #00c6ff, #0072ff); transition: 0.3s; }
-button:hover { background: linear-gradient(45deg, #00ffea, #00aaff); }
+
+.scale-buttons { display: flex; gap: 5px; margin-left: 10px; }
+.scale-buttons button {
+  background: #2a2a2a;
+  border: none;
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.scale-buttons button.active { background: #3399ff; }
+
+.reset-btn {
+  background: #555;
+  border: none;
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: 0.2s;
+}
+.reset-btn:hover { background: #3399ff; }
 
 /* Right Panel */
-.strength-meter { flex: 1; background: #1e1e1e; padding: 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.5); display: flex; flex-direction: column; justify-content: center; align-items: center; }
+.strength-meter {
+  flex: 0.4;
+  background: #1e1e1e;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  position: sticky;
+  top: 20px;
+  height: fit-content;
+}
 .strength-meter h2 { margin-bottom: 20px; color: #00ff72; }
 .meter-background { width: 100%; height: 40px; background: #333; border-radius: 20px; overflow: hidden; margin-bottom: 10px; }
 .meter-fill { width: 0%; height: 100%; background: green; border-radius: 20px; transition: width 0.3s, background 0.3s; }
-#strengthText { font-size: 1.4rem; font-weight: 600; }
+#strengthText { font-size: 1.4rem; font-weight: 600; margin-top: 5px; }
