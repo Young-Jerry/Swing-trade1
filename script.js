@@ -1,17 +1,17 @@
-function calculateScore() {
-    const items = [
-        "ema","macd","rsiLevel","rsiDiv","volume",
-        "candlestick","support","trend","chartPattern",
-        "adx","obv","fibo","news","risk"
-    ];
+const items = [
+    "ema","macd","rsiLevel","rsiDiv","volume",
+    "candlestick","support","trend","chartPattern",
+    "adx","obv","fibo","news","risk"
+];
 
+// Function to calculate and update strength meter
+function updateStrength() {
     let count = 0;
 
     items.forEach(id => {
         if(document.getElementById(id).checked) count++;
     });
 
-    // Update meter
     const meter = document.getElementById("meterFill");
     const percent = (count / items.length) * 100;
     meter.style.width = percent + "%";
@@ -25,14 +25,17 @@ function calculateScore() {
         meter.style.background = "green";
     }
 
-    // Update text
     document.getElementById("strengthText").innerText = `${count} / 14`;
 }
 
+// Attach change listener to every checkbox
+items.forEach(id => {
+    const checkbox = document.getElementById(id);
+    checkbox.addEventListener("change", updateStrength);
+});
+
+// Reset function stays the same
 function resetForm(){
     document.getElementById("tradeForm").reset();
-    const meter = document.getElementById("meterFill");
-    meter.style.width = "0%";
-    meter.style.background = "red";
-    document.getElementById("strengthText").innerText = "0 / 14";
+    updateStrength();
 }
