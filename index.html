@@ -1,102 +1,149 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Swing Trading Checklist</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swing Trading Portfolio Dashboard</title>
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <div class="checklist">
-            <h1>Swing Trading Checklist</h1>
-            <form id="tradeForm">
-                <div class="check-item">
-                    <input type="checkbox" id="ema" />
-                    <label for="ema">EMA 9 > EMA 26</label>
-                    <input type="text" placeholder="Current Scenario">
-                </div>
-                <div class="check-item">
-                    <input type="checkbox" id="macd" />
-                    <label for="macd">MACD Green / Histogram Rising</label>
-                    <input type="text" placeholder="Current Scenario">
-                </div>
-                <div class="check-item">
-                    <input type="checkbox" id="rsiLevel" />
-                    <label for="rsiLevel">RSI 40–70 (Safe Buy)</label>
-                    <input type="text" placeholder="Current RSI">
-                </div>
-                <div class="check-item">
-                    <input type="checkbox" id="rsiDiv" />
-                    <label for="rsiDiv">RSI Divergence</label>
-                    <input type="text" placeholder="Current Scenario">
-                </div>
-                <div class="check-item">
-                    <input type="checkbox" id="volume" />
-                    <label for="volume">Volume Above Average</label>
-                    <input type="text" placeholder="Current Volume">
-                </div>
-                <div class="check-item">
-                    <input type="checkbox" id="candlestick" />
-                    <label for="candlestick">Candlestick Pattern Confirms</label>
-                    <input type="text" placeholder="Pattern Seen">
-                </div>
-                <div class="check-item">
-                    <input type="checkbox" id="support" />
-                    <label for="support">Support/Resistance Aligns</label>
-                    <input type="text" placeholder="Current Level">
-                </div>
-                <div class="check-item">
-                    <input type="checkbox" id="trend" />
-                    <label for="trend">Higher Timeframe Trend Bullish</label>
-                    <input type="text" placeholder="Trend Status">
-                </div>
-                <div class="check-item">
-                    <input type="checkbox" id="chartPattern" />
-                    <label for="chartPattern">Chart Pattern Confirms</label>
-                    <input type="text" placeholder="Pattern">
-                </div>
-                <div class="check-item">
-                    <input type="checkbox" id="adx" />
-                    <label for="adx">ADX > 20</label>
-                    <input type="text" placeholder="Current ADX">
-                </div>
-                <div class="check-item">
-                    <input type="checkbox" id="obv" />
-                    <label for="obv">OBV Rising</label>
-                    <input type="text" placeholder="Current OBV">
-                </div>
-                <div class="check-item">
-                    <input type="checkbox" id="fibo" />
-                    <label for="fibo">Fibonacci Retracement 38/50/61.8%</label>
-                    <input type="text" placeholder="Current Level">
-                </div>
-                <div class="check-item">
-                    <input type="checkbox" id="news" />
-                    <label for="news">News / Market Sentiment OK</label>
-                    <input type="text" placeholder="Current Situation">
-                </div>
-                <div class="check-item">
-                    <input type="checkbox" id="risk" />
-                    <label for="risk">Stop-Loss / Target Set</label>
-                    <input type="text" placeholder="SL / Target">
-                </div>
+<div class="container">
 
-                <button type="button" onclick="calculateScore()">Calculate Strength</button>
-                <button type="button" onclick="resetForm()">Reset</button>
-            </form>
+    <!-- Left Panel: Tick Boxes -->
+    <div class="checklist">
+        <h1>Swing Trading Portfolio</h1>
+        
+        <!-- EMA Crossover -->
+        <div class="check-group">
+            <h3>EMA Crossover</h3>
+            <label class="checkbox orange">
+                <input type="checkbox" id="emaBull"> EMA9 > EMA26 (Bullish)
+            </label>
+            <label class="checkbox green">
+                <input type="checkbox" id="emaBear"> EMA9 < EMA26 (Bearish)
+            </label>
         </div>
 
-        <div class="strength-meter">
-            <h2>Trade Strength</h2>
-            <div class="meter-background">
-                <div class="meter-fill" id="meterFill"></div>
-            </div>
-            <div id="strengthText">0 / 14</div>
+        <!-- MACD Histogram -->
+        <div class="check-group">
+            <h3>MACD Histogram</h3>
+            <label class="checkbox green">
+                <input type="checkbox" id="macdGreen"> Green
+                <select id="macdGreenScale">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3" selected>3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                </select>
+            </label>
+            <label class="checkbox red">
+                <input type="checkbox" id="macdRed"> Red
+                <select id="macdRedScale">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3" selected>3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                </select>
+            </label>
+            <label class="checkbox white">
+                <input type="checkbox" id="macdWhite"> White
+            </label>
         </div>
+
+        <!-- RSI -->
+        <div class="check-group">
+            <h3>RSI</h3>
+            <label class="checkbox">
+                <input type="checkbox" id="rsiUnder30"> &lt;30 Oversold
+            </label>
+            <label class="checkbox">
+                <input type="checkbox" id="rsi3040"> 30–40 Caution
+            </label>
+            <label class="checkbox">
+                <input type="checkbox" id="rsi4070"> 40–70 Buy Zone
+            </label>
+            <label class="checkbox">
+                <input type="checkbox" id="rsiOver70"> &gt;70 Overbought
+            </label>
+        </div>
+
+        <!-- ADX -->
+        <div class="check-group">
+            <h3>ADX</h3>
+            <label class="checkbox"><input type="checkbox" id="adxLow"> &lt;20 Weak trend</label>
+            <label class="checkbox"><input type="checkbox" id="adxMid"> 20–40 Moderate trend</label>
+            <label class="checkbox"><input type="checkbox" id="adxHigh"> &gt;40 Strong trend</label>
+        </div>
+
+        <!-- OBV -->
+        <div class="check-group">
+            <h3>OBV</h3>
+            <label class="checkbox"><input type="checkbox" id="obvRising"> Rising</label>
+            <label class="checkbox"><input type="checkbox" id="obvFalling"> Falling</label>
+        </div>
+
+        <!-- Volume -->
+        <div class="check-group">
+            <h3>Volume</h3>
+            <label class="checkbox"><input type="checkbox" id="volAbove"> Above Average</label>
+            <label class="checkbox"><input type="checkbox" id="volBelow"> Below Average</label>
+        </div>
+
+        <!-- Candlestick -->
+        <div class="check-group">
+            <h3>Candlestick Patterns</h3>
+            <label class="checkbox"><input type="checkbox" id="candleBull"> Bullish</label>
+            <label class="checkbox"><input type="checkbox" id="candleBear"> Bearish</label>
+        </div>
+
+        <!-- Support/Resistance -->
+        <div class="check-group">
+            <h3>Support / Resistance</h3>
+            <label class="checkbox"><input type="checkbox" id="support"> Near Support</label>
+            <label class="checkbox"><input type="checkbox" id="resistance"> Near Resistance</label>
+        </div>
+
+        <!-- Trend Alignment -->
+        <div class="check-group">
+            <h3>Trend Alignment</h3>
+            <label class="checkbox"><input type="checkbox" id="trendBull"> Higher timeframe Bullish</label>
+            <label class="checkbox"><input type="checkbox" id="trendBear"> Higher timeframe Bearish</label>
+        </div>
+
+        <!-- Chart Patterns -->
+        <div class="check-group">
+            <h3>Chart Patterns</h3>
+            <label class="checkbox"><input type="checkbox" id="patternBull"> Bullish patterns</label>
+            <label class="checkbox"><input type="checkbox" id="patternBear"> Bearish patterns</label>
+        </div>
+
+        <!-- News / Market Sentiment -->
+        <div class="check-group">
+            <h3>News / Sentiment</h3>
+            <label class="checkbox positive"><input type="checkbox" id="newsPositive"> Positive</label>
+            <label class="checkbox neutral"><input type="checkbox" id="newsNeutral"> Neutral</label>
+            <label class="checkbox negative"><input type="checkbox" id="newsNegative"> Negative</label>
+        </div>
+
+        <!-- Reset Button -->
+        <button type="button" onclick="resetForm()">Reset All</button>
+
     </div>
 
-    <script src="script.js"></script>
+    <!-- Right Panel: Strength Meter -->
+    <div class="strength-meter">
+        <h2>Trade Strength</h2>
+        <div class="meter-background">
+            <div class="meter-fill" id="meterFill"></div>
+        </div>
+        <div id="strengthText">0 / 100</div>
+    </div>
+
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>
