@@ -10,61 +10,80 @@
 <body>
 <div class="container">
 
-  <!-- Left Panel: Indicators -->
+  <!-- Left Panel: Checklist -->
   <div class="checklist">
     <h1>Swing Trading Portfolio</h1>
 
     <!-- EMA Crossover -->
     <div class="check-group">
-      <h3>EMA Crossover</h3>
-      <label class="checkbox orange">
-        <input type="radio" name="ema" value="bull"> EMA9 > EMA26 (Bullish)
+      <div class="header">
+        <h3>EMA Crossover</h3>
+        <button class="reset-btn" onclick="resetGroup('ema')">Reset</button>
+      </div>
+      <label class="checkbox">
+        <input type="radio" name="ema" value="bull"> <span class="ema9">EMA9</span> &gt; <span class="ema26">EMA26</span> (Bullish)
       </label>
-      <label class="checkbox green">
-        <input type="radio" name="ema" value="bear"> EMA9 < EMA26 (Bearish)
+      <label class="checkbox">
+        <input type="radio" name="ema" value="bear"> <span class="ema9">EMA9</span> &lt; <span class="ema26">EMA26</span> (Bearish)
       </label>
     </div>
 
     <!-- MACD Histogram -->
     <div class="check-group">
-      <h3>MACD Histogram</h3>
+      <div class="header">
+        <h3>MACD Histogram</h3>
+        <button class="reset-btn" onclick="resetGroup('macdColor')">Reset</button>
+      </div>
       <label class="checkbox green">
         <input type="radio" name="macdColor" value="green"> Green
-        <select id="macdGreenScale">
-          <option value="1">1</option>
-          <option value="2">2</option>
-          <option value="3" selected>3</option>
-          <option value="4">4</option>
-          <option value="5">5</option>
-        </select>
+        <div class="scale-buttons" id="macdGreenButtons">
+          <button data-value="1">1</button>
+          <button data-value="2">2</button>
+          <button data-value="3" class="active">3</button>
+          <button data-value="4">4</button>
+          <button data-value="5">5</button>
+        </div>
       </label>
       <label class="checkbox red">
         <input type="radio" name="macdColor" value="red"> Red
-        <select id="macdRedScale">
-          <option value="1">1</option>
-          <option value="2">2</option>
-          <option value="3" selected>3</option>
-          <option value="4">4</option>
-          <option value="5">5</option>
-        </select>
+        <div class="scale-buttons" id="macdRedButtons">
+          <button data-value="1">1</button>
+          <button data-value="2">2</button>
+          <button data-value="3" class="active">3</button>
+          <button data-value="4">4</button>
+          <button data-value="5">5</button>
+        </div>
       </label>
       <label class="checkbox white">
         <input type="radio" name="macdColor" value="white"> White
+        <div class="scale-buttons" id="macdWhiteButtons">
+          <button data-value="1">1</button>
+          <button data-value="2">2</button>
+          <button data-value="3" class="active">3</button>
+          <button data-value="4">4</button>
+          <button data-value="5">5</button>
+        </div>
       </label>
     </div>
 
     <!-- RSI -->
     <div class="check-group">
-      <h3>RSI</h3>
+      <div class="header">
+        <h3>RSI</h3>
+        <button class="reset-btn" onclick="resetGroup('rsi')">Reset</button>
+      </div>
       <label class="checkbox"><input type="radio" name="rsi" value="<30"> &lt;30 Oversold</label>
-      <label class="checkbox"><input type="radio" name="rsi" value="30-40"> 30–40 Caution</label>
-      <label class="checkbox"><input type="radio" name="rsi" value="40-70"> 40–70 Buy Zone</label>
+      <label class="checkbox"><input type="radio" name="rsi" value="30-40"> 30–40 Mild Buy</label>
+      <label class="checkbox"><input type="radio" name="rsi" value="40-70"> 40–70 Neutral</label>
       <label class="checkbox"><input type="radio" name="rsi" value=">70"> &gt;70 Overbought</label>
     </div>
 
     <!-- ADX -->
     <div class="check-group">
-      <h3>ADX</h3>
+      <div class="header">
+        <h3>ADX</h3>
+        <button class="reset-btn" onclick="resetGroup('adx')">Reset</button>
+      </div>
       <label class="checkbox"><input type="radio" name="adx" value="<20"> &lt;20 Weak trend</label>
       <label class="checkbox"><input type="radio" name="adx" value="20-40"> 20–40 Moderate trend</label>
       <label class="checkbox"><input type="radio" name="adx" value=">40"> &gt;40 Strong trend</label>
@@ -72,64 +91,85 @@
 
     <!-- OBV -->
     <div class="check-group">
-      <h3>OBV</h3>
+      <div class="header">
+        <h3>OBV</h3>
+        <button class="reset-btn" onclick="resetGroup('obv')">Reset</button>
+      </div>
       <label class="checkbox"><input type="radio" name="obv" value="rising"> Rising</label>
       <label class="checkbox"><input type="radio" name="obv" value="falling"> Falling</label>
     </div>
 
     <!-- Volume -->
     <div class="check-group">
-      <h3>Volume</h3>
+      <div class="header">
+        <h3>Volume</h3>
+        <button class="reset-btn" onclick="resetGroup('volume')">Reset</button>
+      </div>
       <label class="checkbox"><input type="radio" name="volume" value="above"> Above Average</label>
+      <label class="checkbox"><input type="radio" name="volume" value="average"> Average</label>
       <label class="checkbox"><input type="radio" name="volume" value="below"> Below Average</label>
     </div>
 
     <!-- Candlestick -->
     <div class="check-group">
-      <h3>Candlestick Patterns</h3>
+      <div class="header">
+        <h3>Candlestick Patterns</h3>
+        <button class="reset-btn" onclick="resetGroup('candle')">Reset</button>
+      </div>
       <label class="checkbox"><input type="radio" name="candle" value="bull"> Bullish</label>
       <label class="checkbox"><input type="radio" name="candle" value="bear"> Bearish</label>
     </div>
 
-    <!-- Support/Resistance -->
+    <!-- Support / Resistance -->
     <div class="check-group">
-      <h3>Support / Resistance</h3>
+      <div class="header">
+        <h3>Support / Resistance</h3>
+        <button class="reset-btn" onclick="resetGroup('sr')">Reset</button>
+      </div>
       <label class="checkbox"><input type="radio" name="sr" value="support"> Near Support</label>
       <label class="checkbox"><input type="radio" name="sr" value="resistance"> Near Resistance</label>
     </div>
 
     <!-- Trend Alignment -->
     <div class="check-group">
-      <h3>Trend Alignment</h3>
+      <div class="header">
+        <h3>Trend Alignment</h3>
+        <button class="reset-btn" onclick="resetGroup('trend')">Reset</button>
+      </div>
       <label class="checkbox"><input type="radio" name="trend" value="bull"> Higher timeframe Bullish</label>
       <label class="checkbox"><input type="radio" name="trend" value="bear"> Higher timeframe Bearish</label>
     </div>
 
     <!-- Chart Patterns -->
     <div class="check-group">
-      <h3>Chart Patterns</h3>
+      <div class="header">
+        <h3>Chart Patterns</h3>
+        <button class="reset-btn" onclick="resetGroup('pattern')">Reset</button>
+      </div>
       <label class="checkbox"><input type="radio" name="pattern" value="bull"> Bullish</label>
       <label class="checkbox"><input type="radio" name="pattern" value="bear"> Bearish</label>
     </div>
 
-    <!-- News / Market Sentiment -->
+    <!-- News / Sentiment -->
     <div class="check-group">
-      <h3>News / Sentiment</h3>
+      <div class="header">
+        <h3>News / Sentiment</h3>
+        <button class="reset-btn" onclick="resetGroup('news')">Reset</button>
+      </div>
       <label class="checkbox positive"><input type="radio" name="news" value="positive"> Positive</label>
       <label class="checkbox neutral"><input type="radio" name="news" value="neutral"> Neutral</label>
       <label class="checkbox negative"><input type="radio" name="news" value="negative"> Negative</label>
     </div>
 
-    <button type="button" onclick="resetForm()">Reset All</button>
   </div>
 
-  <!-- Right Panel: Strength Meter -->
+  <!-- Right Panel: Trade Strength -->
   <div class="strength-meter">
     <h2>Trade Strength</h2>
     <div class="meter-background">
       <div class="meter-fill" id="meterFill"></div>
     </div>
-    <div id="strengthText">0 / 100</div>
+    <div id="strengthText">Balanced</div>
   </div>
 
 </div>
