@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swing Trading Checklist</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="checklist">
+            <h1>Swing Trading Checklist</h1>
+            <form id="tradeForm">
+                <div class="check-item">
+                    <input type="checkbox" id="ema" />
+                    <label for="ema">EMA 9 > EMA 26</label>
+                    <input type="text" placeholder="Current Scenario">
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="macd" />
+                    <label for="macd">MACD Green / Histogram Rising</label>
+                    <input type="text" placeholder="Current Scenario">
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="rsiLevel" />
+                    <label for="rsiLevel">RSI 40–70 (Safe Buy)</label>
+                    <input type="text" placeholder="Current RSI">
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="rsiDiv" />
+                    <label for="rsiDiv">RSI Divergence</label>
+                    <input type="text" placeholder="Current Scenario">
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="volume" />
+                    <label for="volume">Volume Above Average</label>
+                    <input type="text" placeholder="Current Volume">
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="candlestick" />
+                    <label for="candlestick">Candlestick Pattern Confirms</label>
+                    <input type="text" placeholder="Pattern Seen">
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="support" />
+                    <label for="support">Support/Resistance Aligns</label>
+                    <input type="text" placeholder="Current Level">
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="trend" />
+                    <label for="trend">Higher Timeframe Trend Bullish</label>
+                    <input type="text" placeholder="Trend Status">
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="chartPattern" />
+                    <label for="chartPattern">Chart Pattern Confirms</label>
+                    <input type="text" placeholder="Pattern">
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="adx" />
+                    <label for="adx">ADX > 20</label>
+                    <input type="text" placeholder="Current ADX">
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="obv" />
+                    <label for="obv">OBV Rising</label>
+                    <input type="text" placeholder="Current OBV">
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="fibo" />
+                    <label for="fibo">Fibonacci Retracement 38/50/61.8%</label>
+                    <input type="text" placeholder="Current Level">
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="news" />
+                    <label for="news">News / Market Sentiment OK</label>
+                    <input type="text" placeholder="Current Situation">
+                </div>
+                <div class="check-item">
+                    <input type="checkbox" id="risk" />
+                    <label for="risk">Stop-Loss / Target Set</label>
+                    <input type="text" placeholder="SL / Target">
+                </div>
+
+                <button type="button" onclick="calculateScore()">Calculate Strength</button>
+                <button type="button" onclick="resetForm()">Reset</button>
+            </form>
+        </div>
+
+        <div class="strength-meter">
+            <h2>Trade Strength</h2>
+            <div class="meter-background">
+                <div class="meter-fill" id="meterFill"></div>
+            </div>
+            <div id="strengthText">0 / 14</div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
