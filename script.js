@@ -1,130 +1,133 @@
-// Initial scale values
-let macdGreenScale = 3;
-let macdRedScale = 3;
-let macdWhiteScale = 3;
+// Initial scales for MACD
+let macdScales = { green: 3, red: 3, white: 3 };
 
-// Update Strength Logic
-function updateStrength() {
+// Update Trade Signal dynamically
+function updateSignal() {
     let score = 0;
 
     // EMA
     const ema = document.querySelector('input[name="ema"]:checked')?.value;
-    if(ema === 'bull') score += 20;
-    else if(ema === 'bear') score -= 20;
+    if(ema === 'bull') score += 3;
+    else if(ema === 'bear') score -= 3;
 
     // MACD
     const macd = document.querySelector('input[name="macdColor"]:checked')?.value;
-    if(macd === 'green') score += macdGreenScale * 4;
-    else if(macd === 'red') score -= macdRedScale * 4;
-    else if(macd === 'white') score += macdWhiteScale * 2; // Neutral
+    if(macd === 'green') score += macdScales.green;
+    else if(macd === 'red') score -= macdScales.red;
+    else if(macd === 'white') score += 0; // neutral
 
     // RSI
     const rsi = document.querySelector('input[name="rsi"]:checked')?.value;
-    if(rsi === '<30') score += 20;
-    else if(rsi === '30-40') score += 10;
-    else if(rsi === '40-70') score += 5;
-    else if(rsi === '>70') score -= 20;
+    if(rsi === '<30') score += 3;
+    else if(rsi === '30-40') score += 2;
+    else if(rsi === '40-70') score += 0;
+    else if(rsi === '>70') score -= 3;
 
     // ADX
     const adx = document.querySelector('input[name="adx"]:checked')?.value;
-    let multiplier = 1;
-    if(adx === '<20') multiplier = 0.5;
-    else if(adx === '20-40') multiplier = 1;
-    else if(adx === '>40') multiplier = 1.5;
+    if(adx === '<20') score += 0.5;
+    else if(adx === '20-40') score += 1;
+    else if(adx === '>40') score += 1.5;
 
     // OBV
     const obv = document.querySelector('input[name="obv"]:checked')?.value;
-    if(obv === 'rising') score += 10;
-    else if(obv === 'falling') score -= 10;
+    if(obv === 'rising') score += 1.5;
+    else if(obv === 'falling') score -= 1.5;
 
     // Volume
     const volume = document.querySelector('input[name="volume"]:checked')?.value;
-    if(volume === 'above') score += 5;
-    else if(volume === 'average') score += 2;
-    else if(volume === 'below') score -= 5;
+    if(volume === 'above') score += 1;
+    else if(volume === 'average') score += 0.5;
+    else if(volume === 'below') score -= 1;
 
     // Candlestick
     const candle = document.querySelector('input[name="candle"]:checked')?.value;
-    if(candle === 'bull') score += 5;
-    else if(candle === 'bear') score -= 5;
+    if(candle === 'bull') score += 1;
+    else if(candle === 'bear') score -= 1;
 
-    // Support/Resistance
+    // Support / Resistance
     const sr = document.querySelector('input[name="sr"]:checked')?.value;
-    if(sr === 'support') score += 5;
-    else if(sr === 'resistance') score -= 5;
+    if(sr === 'support') score += 1;
+    else if(sr === 'resistance') score -= 1;
 
     // Trend Alignment
     const trend = document.querySelector('input[name="trend"]:checked')?.value;
-    if(trend === 'bull') score *= 1.2;
-    else if(trend === 'bear') score *= 0.8;
+    if(trend === 'bull') score += 2;
+    else if(trend === 'bear') score -= 2;
 
     // Chart Patterns
     const pattern = document.querySelector('input[name="pattern"]:checked')?.value;
-    if(pattern === 'bull') score += 3; // Reduced marks
-    else if(pattern === 'bear') score -= 3;
+    if(pattern === 'bull') score += 1;
+    else if(pattern === 'bear') score -= 1;
 
-    // News
+    // News / Sentiment
     const news = document.querySelector('input[name="news"]:checked')?.value;
-    if(news === 'positive') score += 1; // Reduced marks
-    else if(news === 'negative') score -= 1;
+    if(news === 'positive') score += 0.5;
+    else if(news === 'negative') score -= 0.5;
 
-    // Apply ADX multiplier
-    score *= multiplier;
+    // Map score to signal
+    let signal = 'Neutral';
+    let fillColor = 'yellow';
+    let glow = false;
+    if(score >= 8){ signal = 'Strong Buy'; fillColor = 'green'; glow = true; }
+    else if(score >= 4){ signal = 'Buy'; fillColor = 'green'; glow = true; }
+    else if(score <= -8){ signal = 'Strong Sell'; fillColor = 'red'; glow = true; }
+    else if(score <= -4){ signal = 'Sell'; fillColor = 'red'; glow = true; }
 
-    // Clamp and display
-    score = Math.max(0, Math.min(100, Math.round(score)));
-    const meter = document.getElementById("meterFill");
-    const strengthText = document.getElementById("strengthText");
+    // Update meter
+    const meter = document.getElementById('meterFill');
+    meter.style.width = '100%';
+    meter.style.background = fillColor;
+    if(glow) meter.classList.add('glow');
+    else meter.classList.remove('glow');
 
-    meter.style.width = score + "%";
-    if(score < 40) meter.style.background = "red";
-    else if(score < 70) meter.style.background = "yellow";
-    else meter.style.background = "green";
+    // Update text
+    document.getElementById('strengthText').innerText = signal;
 
-    strengthText.innerText = `${score} / 100`;
+    // Add to local log
+    addToLog(signal);
 }
 
-// Reset Functions
-function resetForm() {
-    document.querySelectorAll('input[type="radio"]').forEach(el => el.checked = false);
-    macdGreenScale = 3;
-    macdRedScale = 3;
-    macdWhiteScale = 3;
-    document.querySelectorAll('.scale-buttons button').forEach(btn => btn.classList.remove('active'));
-    updateStrength();
+// Add Trade to Log
+function addToLog(signal) {
+    let log = JSON.parse(localStorage.getItem('tradeLog')) || [];
+    const time = new Date().toLocaleTimeString();
+    log.unshift(`${time}: ${signal}`);
+    if(log.length > 5) log.pop();
+    localStorage.setItem('tradeLog', JSON.stringify(log));
+
+    const logUl = document.getElementById('tradeLog');
+    logUl.innerHTML = '';
+    log.forEach(item => { const li = document.createElement('li'); li.textContent = item; logUl.appendChild(li); });
 }
 
-// Reset Group
-function resetGroup(name) {
-    document.querySelectorAll(`input[name="${name}"]`).forEach(el => el.checked = false);
-    if(name === 'macdColor') {
-        macdGreenScale = 3;
-        macdRedScale = 3;
-        macdWhiteScale = 3;
-        document.querySelectorAll('#macdGreenButtons button, #macdRedButtons button, #macdWhiteButtons button').forEach(btn => btn.classList.remove('active'));
+// Reset group
+function resetGroup(name){
+    document.querySelectorAll(`input[name="${name}"]`).forEach(el => el.checked=false);
+    if(name==='macdColor'){
+        macdScales.green=3; macdScales.red=3; macdScales.white=3;
+        document.querySelectorAll('#macdGreenButtons button, #macdRedButtons button, #macdWhiteButtons button').forEach(b=>b.classList.remove('active'));
     }
-    updateStrength();
+    updateSignal();
 }
 
-// MACD Scale Buttons
-function setupMacdButtons(id, type) {
-    document.querySelectorAll(`#${id} button`).forEach(btn => {
-        btn.addEventListener('click', function(){
-            document.querySelectorAll(`#${id} button`).forEach(b => b.classList.remove('active'));
+// MACD scale buttons
+function setupMacdButtons(id,type){
+    document.querySelectorAll(`#${id} button`).forEach(btn=>{
+        btn.addEventListener('click',function(){
+            document.querySelectorAll(`#${id} button`).forEach(b=>b.classList.remove('active'));
             btn.classList.add('active');
-            const val = parseInt(btn.dataset.value);
-            if(type === 'green') macdGreenScale = val;
-            else if(type === 'red') macdRedScale = val;
-            else if(type === 'white') macdWhiteScale = val;
-            updateStrength();
+            macdScales[type]=parseInt(btn.dataset.value);
+            updateSignal();
         });
     });
 }
 
 // Initialize
-setupMacdButtons('macdGreenButtons', 'green');
-setupMacdButtons('macdRedButtons', 'red');
-setupMacdButtons('macdWhiteButtons', 'white');
+setupMacdButtons('macdGreenButtons','green');
+setupMacdButtons('macdRedButtons','red');
+setupMacdButtons('macdWhiteButtons','white');
+document.querySelectorAll('input[type="radio"]').forEach(el=>el.addEventListener('change', updateSignal));
 
-document.querySelectorAll('input[type="radio"]').forEach(el => el.addEventListener('change', updateStrength));
-updateStrength();
+// Load previous log
+(function(){ updateSignal(); })();
