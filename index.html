@@ -15,7 +15,7 @@
     <h1>Swing Trading Portfolio</h1>
 
     <!-- EMA Crossover -->
-    <div class="check-group">
+    <div class="check-group" title="EMA9 > EMA26: bullish, EMA9 < EMA26: bearish">
       <div class="header">
         <h3>EMA Crossover</h3>
         <button class="reset-btn" onclick="resetGroup('ema')">Reset</button>
@@ -29,7 +29,7 @@
     </div>
 
     <!-- MACD Histogram -->
-    <div class="check-group">
+    <div class="check-group" title="MACD green/red/white bars indicate trend strength and indecision">
       <div class="header">
         <h3>MACD Histogram</h3>
         <button class="reset-btn" onclick="resetGroup('macdColor')">Reset</button>
@@ -39,7 +39,7 @@
         <div class="scale-buttons" id="macdGreenButtons">
           <button data-value="1">1</button>
           <button data-value="2">2</button>
-          <button data-value="3" class="active">3</button>
+          <button data-value="3">3</button>
           <button data-value="4">4</button>
           <button data-value="5">5</button>
         </div>
@@ -49,7 +49,7 @@
         <div class="scale-buttons" id="macdRedButtons">
           <button data-value="1">1</button>
           <button data-value="2">2</button>
-          <button data-value="3" class="active">3</button>
+          <button data-value="3">3</button>
           <button data-value="4">4</button>
           <button data-value="5">5</button>
         </div>
@@ -59,7 +59,7 @@
         <div class="scale-buttons" id="macdWhiteButtons">
           <button data-value="1">1</button>
           <button data-value="2">2</button>
-          <button data-value="3" class="active">3</button>
+          <button data-value="3">3</button>
           <button data-value="4">4</button>
           <button data-value="5">5</button>
         </div>
@@ -67,7 +67,7 @@
     </div>
 
     <!-- RSI -->
-    <div class="check-group">
+    <div class="check-group" title="RSI: <30 oversold (buy), >70 overbought (sell)">
       <div class="header">
         <h3>RSI</h3>
         <button class="reset-btn" onclick="resetGroup('rsi')">Reset</button>
@@ -79,7 +79,7 @@
     </div>
 
     <!-- ADX -->
-    <div class="check-group">
+    <div class="check-group" title="ADX measures trend strength">
       <div class="header">
         <h3>ADX</h3>
         <button class="reset-btn" onclick="resetGroup('adx')">Reset</button>
@@ -90,7 +90,7 @@
     </div>
 
     <!-- OBV -->
-    <div class="check-group">
+    <div class="check-group" title="OBV rising/falling indicates accumulation/distribution">
       <div class="header">
         <h3>OBV</h3>
         <button class="reset-btn" onclick="resetGroup('obv')">Reset</button>
@@ -100,7 +100,7 @@
     </div>
 
     <!-- Volume -->
-    <div class="check-group">
+    <div class="check-group" title="Volume above/below average">
       <div class="header">
         <h3>Volume</h3>
         <button class="reset-btn" onclick="resetGroup('volume')">Reset</button>
@@ -111,7 +111,7 @@
     </div>
 
     <!-- Candlestick -->
-    <div class="check-group">
+    <div class="check-group" title="Candlestick patterns bullish/bearish">
       <div class="header">
         <h3>Candlestick Patterns</h3>
         <button class="reset-btn" onclick="resetGroup('candle')">Reset</button>
@@ -121,7 +121,7 @@
     </div>
 
     <!-- Support / Resistance -->
-    <div class="check-group">
+    <div class="check-group" title="Price near support/resistance">
       <div class="header">
         <h3>Support / Resistance</h3>
         <button class="reset-btn" onclick="resetGroup('sr')">Reset</button>
@@ -131,7 +131,7 @@
     </div>
 
     <!-- Trend Alignment -->
-    <div class="check-group">
+    <div class="check-group" title="Trend alignment across higher timeframe">
       <div class="header">
         <h3>Trend Alignment</h3>
         <button class="reset-btn" onclick="resetGroup('trend')">Reset</button>
@@ -141,7 +141,7 @@
     </div>
 
     <!-- Chart Patterns -->
-    <div class="check-group">
+    <div class="check-group" title="Chart patterns bullish/bearish">
       <div class="header">
         <h3>Chart Patterns</h3>
         <button class="reset-btn" onclick="resetGroup('pattern')">Reset</button>
@@ -151,7 +151,7 @@
     </div>
 
     <!-- News / Sentiment -->
-    <div class="check-group">
+    <div class="check-group" title="Market news sentiment">
       <div class="header">
         <h3>News / Sentiment</h3>
         <button class="reset-btn" onclick="resetGroup('news')">Reset</button>
@@ -163,13 +163,15 @@
 
   </div>
 
-  <!-- Right Panel: Trade Strength -->
+  <!-- Right Panel: Trade Signal -->
   <div class="strength-meter">
-    <h2>Trade Strength</h2>
+    <h2>Trade Signal</h2>
     <div class="meter-background">
       <div class="meter-fill" id="meterFill"></div>
     </div>
-    <div id="strengthText">Balanced</div>
+    <div id="strengthText">Neutral</div>
+    <h3>Last Signals</h3>
+    <ul id="tradeLog"></ul>
   </div>
 
 </div>
