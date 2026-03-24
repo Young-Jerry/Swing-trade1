@@ -1,0 +1,59 @@
+<!-- share_calculator.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Share Calculator NEPSE</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header>
+  <nav>
+    <div class="logo">Portfolio Management</div>
+    <ul>
+      <li><a href="index.html">Dashboard</a></li>
+      <li><a href="trades.html">Trades</a></li>
+      <li><a href="longterm.html">Long Term</a></li>
+      <li><a href="mf.html">Mutual Funds</a></li>
+      <li><a href="journal.html">Journal</a></li>
+      <li><a href="share_calculator.html" class="active">Share Calculator</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main>
+  <h1>NEPSE Share Calculator</h1>
+  <div class="calculator">
+    <div class="inputs">
+      <label>Buy/Sell:
+        <select id="action">
+          <option value="buy">Buy</option>
+          <option value="sell">Sell</option>
+        </select>
+      </label>
+      <label>Purchase Price:
+        <input type="number" id="purchasePrice" step="0.01" />
+      </label>
+      <label>Shares:
+        <input type="number" id="shares" />
+      </label>
+      <label>Selling Price (during sell):
+        <input type="number" id="sellingPrice" step="0.01" />
+      </label>
+      <button id="calculateBtn">Calculate</button>
+    </div>
+    <div class="results">
+      <h2>Results</h2>
+      <div>Total Amount: <span id="totalAmt">-</span></div>
+      <div>Commission: <span id="commission">-</span></div>
+      <div>SEBON Fee (0.015%): <span id="sebonFee">-</span></div>
+      <div>DP Charge: Rs.25</div>
+      <div>Total Payable: <span id="totalPayable">-</span></div>
+      <div>Cost Price Per Share: <span id="costPerShare">-</span></div>
+    </div>
+  </div>
+</main>
+<script src="share_calculator.js"></script>
+</body>
+</html>
