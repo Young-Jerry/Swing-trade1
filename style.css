@@ -1,80 +1,104 @@
-/* General Reset */
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-body { background: #111; color: #fff; min-height: 100vh; }
-.container { display: flex; gap: 40px; padding: 20px; height: 100vh; overflow: hidden; }
-
-/* Left Panel */
-.checklist {
-  flex: 1;
-  background: #1e1e1e;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.5);
-  overflow-y: scroll;
-  height: 100%;
+body {
+  margin:0;
+  font-family:Arial;
+  background:#0b0b0b;
+  color:#eee;
 }
-.checklist h1 { color: #00c6ff; margin-bottom: 20px; font-size: 1.8rem; }
-.check-group { margin-bottom: 20px; }
-.header { display: flex; justify-content: space-between; align-items: center; }
-.check-group h3 { color: #3399ff; }
-.checkbox { display: flex; align-items: center; margin-bottom: 8px; font-size: 1.1rem; cursor: pointer; user-select: none; padding: 6px 10px; border-radius: 8px; transition: 0.2s; }
-.checkbox input { margin-right: 10px; transform: scale(1.4); }
-.checkbox:hover { background: rgba(51,153,255,0.1); }
-.ema9 { color: orange; font-weight: 600; }
-.ema26 { color: green; font-weight: 600; }
-.checkbox.green { color: #00ff72; }
-.checkbox.red { color: red; }
-.checkbox.white { color: #fff; }
-.checkbox.positive { color: #00ff72; }
-.checkbox.neutral { color: #ffff66; }
-.checkbox.negative { color: red; }
 
-.scale-buttons { display: flex; gap: 5px; margin-left: 10px; }
-.scale-buttons button {
-  background: #2a2a2a;
-  border: none;
-  color: #fff;
-  padding: 4px 8px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: 0.2s;
+header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:15px;
+  background:#111;
+  border-bottom:1px solid #222;
 }
-.scale-buttons button.active { background: #3399ff; }
 
-.reset-btn {
-  background: #555;
-  border: none;
-  color: #fff;
-  padding: 4px 8px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: 0.2s;
+h1 { color:gold; }
+
+nav button {
+  background:#1a1a1a;
+  border:none;
+  color:#fff;
+  padding:8px 12px;
+  margin:3px;
+  cursor:pointer;
+  transition:0.2s;
 }
-.reset-btn:hover { background: #3399ff; }
 
-/* Right Panel */
-.strength-meter {
-  flex: 0.4;
-  background: #1e1e1e;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.5);
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: center;
-  position: sticky;
-  top: 20px;
-  height: fit-content;
+nav button:hover {
+  background:gold;
+  color:#000;
 }
-.strength-meter h2 { margin-bottom: 20px; color: #00ff72; }
-.meter-background { width: 100%; height: 40px; background: #333; border-radius: 20px; overflow: hidden; margin-bottom: 10px; }
-.meter-fill { width: 50%; height: 100%; background: yellow; border-radius: 20px; transition: width 0.5s, background 0.5s, box-shadow 0.5s; }
-.meter-fill.glow { box-shadow: 0 0 15px #00ff72, 0 0 25px #00ff72; animation: pulse 1.2s infinite alternate; }
-@keyframes pulse { 0% { box-shadow: 0 0 15px #00ff72,0 0 25px #00ff72; } 100% { box-shadow: 0 0 30px #00ff72,0 0 50px #00ff72; } }
 
-#strengthText { font-size: 1.4rem; font-weight: 600; margin-top: 5px; }
+.card {
+  background:#111;
+  padding:20px;
+  margin:10px;
+  border-radius:10px;
+}
 
-#tradeLog { list-style: none; width: 100%; margin-top: 10px; max-height: 150px; overflow-y: auto; }
-#tradeLog li { padding: 4px 6px; border-bottom: 1px solid #444; font-size: 0.95rem; }
+.flex { display:flex; gap:15px; flex-wrap:wrap; }
+
+input {
+  background:#0f0f0f;
+  border:1px solid #333;
+  color:#fff;
+  padding:6px;
+  margin:5px;
+}
+
+button.action {
+  background:gold;
+  color:black;
+  border:none;
+  padding:6px 10px;
+  cursor:pointer;
+}
+
+table {
+  width:100%;
+  border-collapse:collapse;
+  margin-top:10px;
+}
+
+th,td {
+  padding:10px;
+  border-bottom:1px solid #222;
+  text-align:center;
+}
+
+th {
+  cursor:pointer;
+  background:#111;
+}
+
+.green { color:#00ff99; }
+.red { color:#ff4d4d; }
+
+.highlight { background:rgba(255,215,0,0.08); }
+
+textarea {
+  width:100%;
+  height:350px;
+  background:#111;
+  color:#fff;
+  border:1px solid #333;
+  padding:10px;
+}
+
+.calc-box {
+  display:flex;
+  gap:40px;
+}
+
+.calc-left, .calc-right {
+  flex:1;
+}
+
+.calc-right div {
+  display:flex;
+  justify-content:space-between;
+  padding:8px;
+  border-bottom:1px solid #222;
+}
