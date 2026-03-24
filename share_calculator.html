@@ -1,59 +1,66 @@
-<!-- share_calculator.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Share Calculator NEPSE</title>
-<link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Share Calculator | Portfolio Management System</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-<header>
-  <nav>
-    <div class="logo">Portfolio Management</div>
-    <ul>
-      <li><a href="index.html">Dashboard</a></li>
-      <li><a href="trades.html">Trades</a></li>
-      <li><a href="longterm.html">Long Term</a></li>
-      <li><a href="mf.html">Mutual Funds</a></li>
-      <li><a href="journal.html">Journal</a></li>
-      <li><a href="share_calculator.html" class="active">Share Calculator</a></li>
-    </ul>
-  </nav>
-</header>
+  <header class="header">
+    <nav class="nav">
+      <div class="logo">Portfolio Management System</div>
+      <ul class="nav-links">
+        <li><a href="index.html">Dashboard</a></li>
+        <li><a href="trades.html">Trades</a></li>
+        <li><a href="longterm.html">Long Term</a></li>
+        <li><a href="mf.html">Mutual Funds</a></li>
+        <li><a href="journal.html">Journal</a></li>
+        <li><a class="active" href="share_calculator.html">Share Calculator</a></li>
+      </ul>
+    </nav>
+  </header>
 
-<main>
-  <h1>NEPSE Share Calculator</h1>
-  <div class="calculator">
-    <div class="inputs">
-      <label>Buy/Sell:
-        <select id="action">
-          <option value="buy">Buy</option>
-          <option value="sell">Sell</option>
-        </select>
-      </label>
-      <label>Purchase Price:
-        <input type="number" id="purchasePrice" step="0.01" />
-      </label>
-      <label>Shares:
-        <input type="number" id="shares" />
-      </label>
-      <label>Selling Price (during sell):
-        <input type="number" id="sellingPrice" step="0.01" />
-      </label>
-      <button id="calculateBtn">Calculate</button>
-    </div>
-    <div class="results">
-      <h2>Results</h2>
-      <div>Total Amount: <span id="totalAmt">-</span></div>
-      <div>Commission: <span id="commission">-</span></div>
-      <div>SEBON Fee (0.015%): <span id="sebonFee">-</span></div>
-      <div>DP Charge: Rs.25</div>
-      <div>Total Payable: <span id="totalPayable">-</span></div>
-      <div>Cost Price Per Share: <span id="costPerShare">-</span></div>
-    </div>
-  </div>
-</main>
-<script src="share_calculator.js"></script>
+  <main class="container">
+    <h1>NEPSE Share Calculator</h1>
+    <p class="subtitle">This calculator is separate from portfolio P/L calculations.</p>
+
+    <section class="calc-grid">
+      <article class="card section">
+        <h3>Input</h3>
+        <form id="calcForm" class="form-grid" style="grid-template-columns:1fr;">
+          <label>Buy / Sell
+            <select id="action" required>
+              <option value="buy">Buy</option>
+              <option value="sell">Sell</option>
+            </select>
+          </label>
+          <label>Purchase Price (Rs)
+            <input id="purchasePrice" type="number" min="0" step="0.01" required />
+          </label>
+          <label>Number of Shares
+            <input id="shares" type="number" min="1" step="1" required />
+          </label>
+          <label id="sellingWrap">Selling Price (Rs)
+            <input id="sellingPrice" type="number" min="0" step="0.01" />
+          </label>
+        </form>
+      </article>
+
+      <article class="card section">
+        <h3>Results</h3>
+        <ul class="result-list">
+          <li><span>Transaction Amount</span><strong id="transactionAmount">₨0</strong></li>
+          <li><span>Commission</span><strong id="commission">₨0</strong></li>
+          <li><span>SEBON Fee (0.015%)</span><strong id="sebonFee">₨0</strong></li>
+          <li><span>DP Charge</span><strong id="dpCharge">₨25</strong></li>
+          <li><span>Total Amount Payable (Rs)</span><strong id="totalPayable">₨0</strong></li>
+          <li><span>Cost Price Per Share (Rs)</span><strong id="costPerShare">₨0</strong></li>
+        </ul>
+      </article>
+    </section>
+  </main>
+
+  <script src="share_calculator.js"></script>
 </body>
 </html>

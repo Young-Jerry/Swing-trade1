@@ -1,39 +1,65 @@
-// share_calculator.js
-document.getElementById('calculateBtn').addEventListener('click', () => {
-  const action = document.getElementById('action').value;
-  const purchasePrice = parseFloat(document.getElementById('purchasePrice').value);
-  const shares = parseInt(document.getElementById('shares').value);
-  const sellingPrice = parseFloat(document.getElementById('sellingPrice').value);
+(() => {
+  const action = document.getElementById('action');
+  const purchasePrice = document.getElementById('purchasePrice');
+  const shares = document.getElementById('shares');
+  const sellingPrice = document.getElementById('sellingPrice');
+  const sellingWrap = document.getElementById('sellingWrap');
 
-  if (isNaN(purchasePrice) || isNaN(shares) || (action==='sell' && isNaN(sellingPrice))) {
-    alert('Please fill all required fields correctly.');
-    return;
+  [action, purchasePrice, shares, sellingPrice].forEach((el) => {
+    el.addEventListener('input', calculate);
+  });
+
+  calculate();
+
+  function calculate() {
+    const side = action.value;
+    const buy = num(purchasePrice.value);
+    const qty = num(shares.value);
+    const sell = num(sellingPrice.value);
+
+    sellingWrap.style.display = side === 'sell' ? 'flex' : 'none';
+
+    const usedPrice = side === 'sell' ? sell : buy;
+    if (!valid(buy) || !valid(qty) || (side === 'sell' && !valid(sell))) {
+      setResults(0, 0, 0, 25, 0, 0);
+      return;
+    }
+
+    const transaction = usedPrice * qty;
+    const commission = transaction * brokerRate(transaction);
+    const sebon = transaction * 0.00015;
+    const dp = 25;
+    const totalPayable = transaction + commission + sebon + dp;
+    const cps = totalPayable / qty;
+
+    setResults(transaction, commission, sebon, dp, totalPayable, cps);
   }
 
-  const transactionAmt = (action === 'buy') ? purchasePrice * shares : sellingPrice * shares;
+  function setResults(transaction, commission, sebon, dp, payable, cps) {
+    text('transactionAmount', money(transaction));
+    text('commission', money(commission));
+    text('sebonFee', money(sebon));
+    text('dpCharge', money(dp));
+    text('totalPayable', money(payable));
+    text('costPerShare', money(cps));
+  }
 
-  // Commission tiers
-  let commissionRate = 0;
-  if (transactionAmt <= 50000) commissionRate = 0.004;
-  else if (transactionAmt <= 500000) commissionRate = 0.0037;
-  else if (transactionAmt <= 2000000) commissionRate = 0.0034;
-  else if (transactionAmt <= 10000000) commissionRate = 0.003;
-  else commissionRate = 0.0027;
+  function brokerRate(amount) {
+    if (amount <= 50000) return 0.004;
+    if (amount <= 500000) return 0.0037;
+    if (amount <= 2000000) return 0.0034;
+    if (amount <= 10000000) return 0.003;
+    return 0.0027;
+  }
 
-  const commission = transactionAmt * commissionRate;
-  const sebonFee = transactionAmt * 0.00015;
-  const totalAmt = transactionAmt + commission + (action==='buy'?0:0);
-  const totalPayable = totalAmt + 25 + sebonFee;
+  function text(id, value) {
+    document.getElementById(id).textContent = value;
+  }
 
-  const costPerShare = purchasePrice;
+  function money(v) {
+    return `₨${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 4 }).format(v || 0)}`;
+  }
 
-  document.getElementById('totalAmt').textContent = `₨${formatNepaliNumber(transactionAmt)}`;
-  document.getElementById('commission').textContent = `₨${formatNepaliNumber(commission)}`;
-  document.getElementById('sebonFee').textContent = `₨${formatNepaliNumber(sebonFee)}`;
-  document.getElementById('totalPayable').textContent = `₨${formatNepaliNumber(totalPayable)}`;
-  document.getElementById('costPerShare').textContent = `₨${formatNepaliNumber(costPerShare)}`;
-});
-
-function formatNepaliNumber(number) {
-  return number.toLocaleString('ne-NP');
-}
+  function num(v) { return Number.parseFloat(v); }
+  function valid(v) { return Number.isFinite(v) && v > 0; }
+})();

@@ -1,40 +1,62 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Portfolio Management System</title>
-<link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portfolio Management System</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-<header>
-  <nav>
-    <div class="logo">Portfolio Management</div>
-    <ul>
-      <li><a href="index.html">Dashboard</a></li>
-      <li><a href="trades.html">Trades</a></li>
-      <li><a href="longterm.html">Long Term</a></li>
-      <li><a href="mf.html">Mutual Funds</a></li>
-      <li><a href="journal.html">Journal</a></li>
-      <li><a href="share_calculator.html">Share Calculator</a></li>
-    </ul>
-  </nav>
-</header>
+  <header class="header">
+    <nav class="nav">
+      <div class="logo">Portfolio Management System</div>
+      <ul class="nav-links">
+        <li><a class="active" href="index.html">Dashboard</a></li>
+        <li><a href="trades.html">Trades</a></li>
+        <li><a href="longterm.html">Long Term</a></li>
+        <li><a href="mf.html">Mutual Funds</a></li>
+        <li><a href="journal.html">Journal</a></li>
+        <li><a href="share_calculator.html">Share Calculator</a></li>
+      </ul>
+    </nav>
+  </header>
 
-<main id="dashboard">
-  <section class="stats">
-    <div class="card" id="totalTrades">Total Trades: 0</div>
-    <div class="card" id="totalLongTerm">Total Long Term: 0</div>
-    <div class="card" id="totalMF">Total Mutual Funds: 0</div>
-    <div class="card" id="combinedTotal">Combined Total: 0</div>
-  </section>
-  <section class="sector-allocation">
-    <h2>Sector Allocation</h2>
-    <div class="pie-chart-placeholder">[Pie Chart Placeholder]</div>
-  </section>
-</main>
+  <main class="container">
+    <h1>Homepage Dashboard</h1>
+    <p class="subtitle">NEPSE Portfolio Overview (NPR)</p>
 
-<script src="script.js"></script>
+    <section class="grid">
+      <article class="card stat-card">
+        <div class="stat-label">Total Value of Trades</div>
+        <div class="stat-value" id="totalTrades">₨0</div>
+      </article>
+      <article class="card stat-card">
+        <div class="stat-label">Total Value of Long Term</div>
+        <div class="stat-value" id="totalLongTerm">₨0</div>
+      </article>
+      <article class="card stat-card">
+        <div class="stat-label">Total Value of Mutual Funds</div>
+        <div class="stat-value" id="totalMF">₨0</div>
+      </article>
+      <article class="card stat-card">
+        <div class="stat-label">Combined Total (DP Holding)</div>
+        <div class="stat-value" id="combinedTotal">₨0</div>
+      </article>
+    </section>
+
+    <section class="dashboard-layout">
+      <article class="card pie-wrap">
+        <h3>Portfolio Allocation</h3>
+        <p class="subtitle">Trades vs Long Term vs Mutual Funds</p>
+        <div id="allocationPie" aria-label="Allocation pie chart"></div>
+      </article>
+      <article class="card pie-wrap">
+        <h3>Allocation Breakdown</h3>
+        <ul class="legend" id="allocationLegend"></ul>
+      </article>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
 </body>
 </html>

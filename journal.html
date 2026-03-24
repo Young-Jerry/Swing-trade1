@@ -1,31 +1,45 @@
-<!-- journal.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Journal</title>
-<link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Journal | Portfolio Management System</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-<header>
-  <nav>
-    <div class="logo">Portfolio Management</div>
-    <ul>
-      <li><a href="index.html">Dashboard</a></li>
-      <li><a href="trades.html">Trades</a></li>
-      <li><a href="longterm.html">Long Term</a></li>
-      <li><a href="mf.html">Mutual Funds</a></li>
-      <li><a href="journal.html" class="active">Journal</a></li>
-      <li><a href="share_calculator.html">Share Calculator</a></li>
-    </ul>
-  </nav>
-</header>
+  <header class="header">
+    <nav class="nav">
+      <div class="logo">Portfolio Management System</div>
+      <ul class="nav-links">
+        <li><a href="index.html">Dashboard</a></li>
+        <li><a href="trades.html">Trades</a></li>
+        <li><a href="longterm.html">Long Term</a></li>
+        <li><a href="mf.html">Mutual Funds</a></li>
+        <li><a class="active" href="journal.html">Journal</a></li>
+        <li><a href="share_calculator.html">Share Calculator</a></li>
+      </ul>
+    </nav>
+  </header>
 
-<main>
-  <h1>Journal</h1>
-  <div id="journal-container"></div>
-</main>
-<script src="journal.js"></script>
+  <main class="container">
+    <h1>Trading Journal</h1>
+    <p class="subtitle">One entry per date. You can move backward in time but not beyond today.</p>
+
+    <section class="card section">
+      <div class="toolbar">
+        <div>
+          <h3 id="journalDate" style="margin:0;"></h3>
+          <div class="save-indicator" id="journalSaved">Saved ✓</div>
+        </div>
+        <div class="journal-nav">
+          <button id="prevDay" class="btn-secondary" type="button">← Back</button>
+          <button id="nextDay" class="btn-secondary" type="button">Forward →</button>
+        </div>
+      </div>
+      <textarea id="journalText" class="journal-textarea" placeholder="Write your trading notes for this date..."></textarea>
+    </section>
+  </main>
+
+  <script src="journal.js"></script>
 </body>
 </html>
