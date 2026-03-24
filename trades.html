@@ -1,0 +1,62 @@
+<!-- trades.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Trades Portfolio</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header>
+  <nav>
+    <div class="logo">Portfolio Management</div>
+    <ul>
+      <li><a href="index.html">Dashboard</a></li>
+      <li><a href="trades.html" class="active">Trades</a></li>
+      <li><a href="longterm.html">Long Term</a></li>
+      <li><a href="mf.html">Mutual Funds</a></li>
+      <li><a href="journal.html">Journal</a></li>
+      <li><a href="share_calculator.html">Share Calculator</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main>
+  <h1>Trades Portfolio</h1>
+  <section class="summary">
+    <div>Total Invested: <span id="totalInvested">-</span></div>
+    <div>Total Current Value: <span id="totalCurrent">-</span></div>
+    <div>Total P/L: <span id="totalPL">-</span></div>
+  </section>
+  <section class="add-trade-form">
+    <h2>Add New Trade</h2>
+    <form id="addTradeForm">
+      <input type="text" id="script" placeholder="Script" required />
+      <input type="text" id="sector" placeholder="Sector" required />
+      <input type="number" id="ltp" placeholder="LTP" step="0.01" required />
+      <input type="number" id="sell1" placeholder="Sell Range 1" step="0.01" required />
+      <button type="submit">Add Trade</button>
+    </form>
+  </section>
+  <section class="trade-table-container">
+    <table id="tradeTable">
+      <thead>
+        <tr>
+          <th data-sort="script">Script</th>
+          <th data-sort="sector">Sector</th>
+          <th data-sort="ltp">LTP</th>
+          <th data-sort="sellRange">Sell Range</th>
+          <th data-sort="distance">Distance</th>
+          <th data-sort="current">Current Value</th>
+          <th data-sort="pl">P/L</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+</main>
+<script src="trades.js"></script>
+</body>
+</html>
