@@ -2,179 +2,24 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Swing Trading Dashboard</title>
+<title>Mission 100M – Part 1M</title>
 <link rel="stylesheet" href="style.css">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-<div class="container">
 
-  <!-- Left Panel: Checklist -->
-  <div class="checklist">
-    <h1>Swing Trading Portfolio</h1>
+<header>
+  <h1>Mission 100M</h1>
+  <nav>
+    <button onclick="nav('home')">Home</button>
+    <button onclick="nav('trades')">Trades</button>
+    <button onclick="nav('long')">Long Term</button>
+    <button onclick="nav('mf')">Mutual Funds</button>
+    <button onclick="nav('journal')">Journal</button>
+    <button onclick="nav('calc')">Calculator</button>
+  </nav>
+</header>
 
-    <!-- EMA Crossover -->
-    <div class="check-group" title="EMA9 > EMA26: bullish, EMA9 < EMA26: bearish">
-      <div class="header">
-        <h3>EMA Crossover</h3>
-        <button class="reset-btn" onclick="resetGroup('ema')">Reset</button>
-      </div>
-      <label class="checkbox">
-        <input type="radio" name="ema" value="bull"> <span class="ema9">EMA9</span> &gt; <span class="ema26">EMA26</span> (Bullish)
-      </label>
-      <label class="checkbox">
-        <input type="radio" name="ema" value="bear"> <span class="ema9">EMA9</span> &lt; <span class="ema26">EMA26</span> (Bearish)
-      </label>
-    </div>
-
-    <!-- MACD Histogram -->
-    <div class="check-group" title="MACD green/red/white bars indicate trend strength and indecision">
-      <div class="header">
-        <h3>MACD Histogram</h3>
-        <button class="reset-btn" onclick="resetGroup('macdColor')">Reset</button>
-      </div>
-      <label class="checkbox green">
-        <input type="radio" name="macdColor" value="green"> Green
-        <div class="scale-buttons" id="macdGreenButtons">
-          <button data-value="1">1</button>
-          <button data-value="2">2</button>
-          <button data-value="3">3</button>
-          <button data-value="4">4</button>
-          <button data-value="5">5</button>
-        </div>
-      </label>
-      <label class="checkbox red">
-        <input type="radio" name="macdColor" value="red"> Red
-        <div class="scale-buttons" id="macdRedButtons">
-          <button data-value="1">1</button>
-          <button data-value="2">2</button>
-          <button data-value="3">3</button>
-          <button data-value="4">4</button>
-          <button data-value="5">5</button>
-        </div>
-      </label>
-      <label class="checkbox white">
-        <input type="radio" name="macdColor" value="white"> White
-        <div class="scale-buttons" id="macdWhiteButtons">
-          <button data-value="1">1</button>
-          <button data-value="2">2</button>
-          <button data-value="3">3</button>
-          <button data-value="4">4</button>
-          <button data-value="5">5</button>
-        </div>
-      </label>
-    </div>
-
-    <!-- RSI -->
-    <div class="check-group" title="RSI: <30 oversold (buy), >70 overbought (sell)">
-      <div class="header">
-        <h3>RSI</h3>
-        <button class="reset-btn" onclick="resetGroup('rsi')">Reset</button>
-      </div>
-      <label class="checkbox"><input type="radio" name="rsi" value="<30"> &lt;30 Oversold</label>
-      <label class="checkbox"><input type="radio" name="rsi" value="30-40"> 30–40 Mild Buy</label>
-      <label class="checkbox"><input type="radio" name="rsi" value="40-70"> 40–70 Neutral</label>
-      <label class="checkbox"><input type="radio" name="rsi" value=">70"> &gt;70 Overbought</label>
-    </div>
-
-    <!-- ADX -->
-    <div class="check-group" title="ADX measures trend strength">
-      <div class="header">
-        <h3>ADX</h3>
-        <button class="reset-btn" onclick="resetGroup('adx')">Reset</button>
-      </div>
-      <label class="checkbox"><input type="radio" name="adx" value="<20"> &lt;20 Weak trend</label>
-      <label class="checkbox"><input type="radio" name="adx" value="20-40"> 20–40 Moderate trend</label>
-      <label class="checkbox"><input type="radio" name="adx" value=">40"> &gt;40 Strong trend</label>
-    </div>
-
-    <!-- OBV -->
-    <div class="check-group" title="OBV rising/falling indicates accumulation/distribution">
-      <div class="header">
-        <h3>OBV</h3>
-        <button class="reset-btn" onclick="resetGroup('obv')">Reset</button>
-      </div>
-      <label class="checkbox"><input type="radio" name="obv" value="rising"> Rising</label>
-      <label class="checkbox"><input type="radio" name="obv" value="falling"> Falling</label>
-    </div>
-
-    <!-- Volume -->
-    <div class="check-group" title="Volume above/below average">
-      <div class="header">
-        <h3>Volume</h3>
-        <button class="reset-btn" onclick="resetGroup('volume')">Reset</button>
-      </div>
-      <label class="checkbox"><input type="radio" name="volume" value="above"> Above Average</label>
-      <label class="checkbox"><input type="radio" name="volume" value="average"> Average</label>
-      <label class="checkbox"><input type="radio" name="volume" value="below"> Below Average</label>
-    </div>
-
-    <!-- Candlestick -->
-    <div class="check-group" title="Candlestick patterns bullish/bearish">
-      <div class="header">
-        <h3>Candlestick Patterns</h3>
-        <button class="reset-btn" onclick="resetGroup('candle')">Reset</button>
-      </div>
-      <label class="checkbox"><input type="radio" name="candle" value="bull"> Bullish</label>
-      <label class="checkbox"><input type="radio" name="candle" value="bear"> Bearish</label>
-    </div>
-
-    <!-- Support / Resistance -->
-    <div class="check-group" title="Price near support/resistance">
-      <div class="header">
-        <h3>Support / Resistance</h3>
-        <button class="reset-btn" onclick="resetGroup('sr')">Reset</button>
-      </div>
-      <label class="checkbox"><input type="radio" name="sr" value="support"> Near Support</label>
-      <label class="checkbox"><input type="radio" name="sr" value="resistance"> Near Resistance</label>
-    </div>
-
-    <!-- Trend Alignment -->
-    <div class="check-group" title="Trend alignment across higher timeframe">
-      <div class="header">
-        <h3>Trend Alignment</h3>
-        <button class="reset-btn" onclick="resetGroup('trend')">Reset</button>
-      </div>
-      <label class="checkbox"><input type="radio" name="trend" value="bull"> Higher timeframe Bullish</label>
-      <label class="checkbox"><input type="radio" name="trend" value="bear"> Higher timeframe Bearish</label>
-    </div>
-
-    <!-- Chart Patterns -->
-    <div class="check-group" title="Chart patterns bullish/bearish">
-      <div class="header">
-        <h3>Chart Patterns</h3>
-        <button class="reset-btn" onclick="resetGroup('pattern')">Reset</button>
-      </div>
-      <label class="checkbox"><input type="radio" name="pattern" value="bull"> Bullish</label>
-      <label class="checkbox"><input type="radio" name="pattern" value="bear"> Bearish</label>
-    </div>
-
-    <!-- News / Sentiment -->
-    <div class="check-group" title="Market news sentiment">
-      <div class="header">
-        <h3>News / Sentiment</h3>
-        <button class="reset-btn" onclick="resetGroup('news')">Reset</button>
-      </div>
-      <label class="checkbox positive"><input type="radio" name="news" value="positive"> Positive</label>
-      <label class="checkbox neutral"><input type="radio" name="news" value="neutral"> Neutral</label>
-      <label class="checkbox negative"><input type="radio" name="news" value="negative"> Negative</label>
-    </div>
-
-  </div>
-
-  <!-- Right Panel: Trade Signal -->
-  <div class="strength-meter">
-    <h2>Trade Signal</h2>
-    <div class="meter-background">
-      <div class="meter-fill" id="meterFill"></div>
-    </div>
-    <div id="strengthText">Neutral</div>
-    <h3>Last Signals</h3>
-    <ul id="tradeLog"></ul>
-  </div>
-
-</div>
+<main id="app"></main>
 
 <script src="script.js"></script>
 </body>
