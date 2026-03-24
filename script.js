@@ -1,12 +1,12 @@
 (function () {
   const colors = ['#f4b942', '#2ac07e', '#4e89ff'];
   const keys = [
-    { id: 'trades', label: 'Trades', node: 'totalTrades' },
-    { id: 'longterm', label: 'Long Term', node: 'totalLongTerm' },
-    { id: 'mf', label: 'Mutual Funds', node: 'totalMF' },
+    { id: 'trades', label: 'Trades', node: 'totalTrades', total: tradeLikeTotal },
+    { id: 'longterm', label: 'Long Term', node: 'totalLongTerm', total: tradeLikeTotal },
+    { id: 'sipData', label: 'SIP System', node: 'totalMF', total: sipTotal },
   ];
 
-  const totals = keys.map((k) => ({ ...k, value: portfolioTotal(k.id) }));
+  const totals = keys.map((k) => ({ ...k, value: k.total(k.id) }));
   const combined = totals.reduce((s, x) => s + x.value, 0);
 
   totals.forEach((t) => {
@@ -16,9 +16,14 @@
 
   renderPie(totals, combined);
 
-  function portfolioTotal(key) {
+  function tradeLikeTotal(key) {
     const rows = JSON.parse(localStorage.getItem(key) || '[]');
     return rows.reduce((s, r) => s + (Number(r.ltp || 0) * Number(r.qty || 0)), 0);
+  }
+
+  function sipTotal(key) {
+    const rows = JSON.parse(localStorage.getItem(key) || '[]');
+    return rows.reduce((s, r) => s + Number(r.amount || 0), 0);
   }
 
   function renderPie(parts, total) {
