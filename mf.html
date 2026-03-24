@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mutual Funds | Portfolio Management System</title>
+  <title>SIP System | Portfolio Management System</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -14,54 +14,54 @@
         <li><a href="index.html">Dashboard</a></li>
         <li><a href="trades.html">Trades</a></li>
         <li><a href="longterm.html">Long Term</a></li>
-        <li><a class="active" href="mf.html">Mutual Funds</a></li>
+        <li><a class="active" href="mf.html">SIP System</a></li>
+        <li><a href="pasttrades.html">Past Trades</a></li>
         <li><a href="journal.html">Journal</a></li>
         <li><a href="share_calculator.html">Share Calculator</a></li>
       </ul>
     </nav>
   </header>
 
-  <main class="container" data-portfolio-key="mf" data-portfolio-title="Mutual Funds">
-    <h1>Mutual Funds</h1>
-    <p class="subtitle">Track holdings with quick inline editing and auto calculations.</p>
+  <main class="container">
+    <h1>SIP System</h1>
+    <p class="subtitle">Monthly SIP tracker with fixed NAV entries and unit-based records.</p>
 
     <section class="card section">
       <div class="summary-grid">
         <div class="summary-item">Total Invested: <strong id="totalInvested">₨0</strong></div>
-        <div class="summary-item">Total Current Value: <strong id="totalCurrent">₨0</strong></div>
-        <div class="summary-item">Total P/L: <strong id="totalPL">₨0</strong></div>
+        <div class="summary-item">Total Units Owned: <strong id="totalUnits">0</strong></div>
+        <div class="summary-item">Remaining Units: <strong id="remainingUnits">0</strong></div>
       </div>
     </section>
 
     <section class="card section">
-      <div class="toolbar">
-        <h3>Add Entry</h3>
-        <div class="save-indicator" id="saveIndicator">Saved ✓</div>
-      </div>
-      <form id="addForm" class="form-grid" autocomplete="off">
-        <label>Script<input data-next type="text" name="script" required /></label>
-        <label>Sector<input data-next type="text" name="sector" required /></label>
-        <label>LTP<input data-next type="number" name="ltp" min="0" step="0.01" required /></label>
-        <label>Qty<input data-next type="number" name="qty" min="0" step="1" required /></label>
-        <label>WACC<input data-next type="number" name="wacc" min="0" step="0.01" required /></label>
-        <label>SELL1<input data-next type="number" name="sell1" min="0" step="0.01" required /></label>
-        <button class="btn-primary" type="submit">Add Fund</button>
+      <h3>Add Monthly SIP Entry</h3>
+      <form id="sipForm" class="form-grid" autocomplete="off">
+        <label>Date<input data-next type="date" name="date" required /></label>
+        <label>Amount Invested<input data-next type="number" name="amount" min="0" step="0.01" required /></label>
+        <label>NAV<input data-next type="number" name="nav" min="0" step="0.0001" required /></label>
+        <button class="btn-primary" type="submit">Add SIP Entry</button>
       </form>
     </section>
 
     <section class="card section">
+      <h3>Partial Exit (Optional)</h3>
+      <form id="partialExitForm" class="form-grid" autocomplete="off">
+        <label>Units to Sell<input type="number" name="unitsToSell" min="0" step="0.0001" /></label>
+        <button class="btn-secondary" type="submit">Apply Exit</button>
+      </form>
+      <p class="subtitle" id="exitMessage">No partial exit applied.</p>
+    </section>
+
+    <section class="card section">
       <div class="table-wrap">
-        <table id="portfolioTable">
+        <table id="sipTable">
           <thead>
             <tr>
-              <th data-sort="script">Script</th>
-              <th data-sort="sector">Sector</th>
-              <th data-sort="ltp">LTP</th>
-              <th data-sort="sell1">Sell Range (SELL1 - SELL2)</th>
-              <th data-sort="distance">Distance from sell range</th>
-              <th data-sort="current">Current Value</th>
-              <th data-sort="pl">Total P/L</th>
-              <th data-sort="actions">Actions</th>
+              <th>Date</th>
+              <th>Amount</th>
+              <th>NAV</th>
+              <th>Units</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -70,6 +70,6 @@
     </section>
   </main>
 
-  <script src="portfolio.js"></script>
+  <script src="mf.js"></script>
 </body>
 </html>
