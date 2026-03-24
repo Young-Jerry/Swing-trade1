@@ -1,94 +1,64 @@
-// journal.js
-const journalKey = 'journal';
+(() => {
+  const key = 'journals';
+  const today = stripTime(new Date());
+  let currentDate = new Date(today);
+  const dateNode = document.getElementById('journalDate');
+  const textNode = document.getElementById('journalText');
+  const savedNode = document.getElementById('journalSaved');
+  const prevBtn = document.getElementById('prevDay');
+  const nextBtn = document.getElementById('nextDay');
+  let timer;
 
-function loadJournal() {
-  let journalData = JSON.parse(localStorage.getItem(journalKey) || '{}');
-  const container = document.getElementById('journal-container');
-  container.innerHTML = '';
+  const store = readStore();
+  ensureTodayEntry();
+  render();
 
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  prevBtn.addEventListener('click', () => {
+    currentDate.setDate(currentDate.getDate() - 1);
+    render();
+  });
 
-  if (!journalData[todayStr]) {
-    journalData[todayStr] = '';
+  nextBtn.addEventListener('click', () => {
+    const next = new Date(currentDate);
+    next.setDate(next.getDate() + 1);
+    if (next > today) return;
+    currentDate = next;
+    render();
+  });
+
+  textNode.addEventListener('input', () => {
+    store[dateKey(currentDate)] = textNode.value;
+    localStorage.setItem(key, JSON.stringify(store));
+    savedNode.textContent = 'Saving...';
+    clearTimeout(timer);
+    timer = setTimeout(() => (savedNode.textContent = 'Saved ✓'), 350);
+  });
+
+  function render() {
+    const k = dateKey(currentDate);
+    if (!store[k]) store[k] = '';
+    dateNode.textContent = currentDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    textNode.value = store[k];
+    nextBtn.disabled = stripTime(currentDate).getTime() === today.getTime();
   }
 
-  // Auto-create today's journal if not exists
-  if (!journalData[todayStr]) {
-    journalData[todayStr] = '';
+  function readStore() {
+    return JSON.parse(localStorage.getItem(key) || '{}');
   }
 
-  const dateHeader = document.createElement('h2');
-  dateHeader.textContent = formatDate(today);
-  container.appendChild(dateHeader);
+  function ensureTodayEntry() {
+    const k = dateKey(today);
+    if (store[k] === undefined) {
+      store[k] = '';
+      localStorage.setItem(key, JSON.stringify(store));
+    }
+  }
 
-  const textarea = document.createElement('textarea');
-  textarea.style.width = '100%';
-  textarea.style.height = '300px';
-  textarea.value = journalData[todayStr];
-  textarea.addEventListener('input', () => {
-    journalData[todayStr] = textarea.value;
-    localStorage.setItem(journalKey, JSON.stringify(journalData));
-  });
-  container.appendChild(textarea);
+  function dateKey(d) {
+    return d.toISOString().slice(0, 10);
+  }
 
-  // Navigation for past dates
-  const navDiv = document.createElement('div');
-  navDiv.style.marginTop = '10px';
-
-  const backBtn = document.createElement('button');
-  backBtn.textContent = 'Back';
-  backBtn.onclick = () => {
-    const prevDate = new Date(today);
-    prevDate.setDate(prevDate.getDate() - 1);
-    loadJournalForDate(prevDate);
-  };
-  navDiv.appendChild(backBtn);
-
-  // No forward beyond today
-  container.appendChild(navDiv);
-}
-
-function loadJournalForDate(date) {
-  const journalData = JSON.parse(localStorage.getItem(journalKey) || '{}');
-  const dateStr = date.toISOString().split('T')[0];
-  const container = document.getElementById('journal-container');
-  container.innerHTML = '';
-
-  const dateHeader = document.createElement('h2');
-  dateHeader.textContent = formatDate(date);
-  container.appendChild(dateHeader);
-
-  const textarea = document.createElement('textarea');
-  textarea.style.width = '100%';
-  textarea.style.height = '300px';
-  textarea.value = journalData[dateStr] || '';
-  textarea.addEventListener('input', () => {
-    journalData[dateStr] = textarea.value;
-    localStorage.setItem(journalKey, JSON.stringify(journalData));
-  });
-  container.appendChild(textarea);
-
-  // Navigation
-  const navDiv = document.createElement('div');
-  navDiv.style.marginTop = '10px';
-
-  const backBtn = document.createElement('button');
-  backBtn.textContent = 'Back';
-  backBtn.onclick = () => {
-    const prevDate = new Date(date);
-    prevDate.setDate(prevDate.getDate() - 1);
-    loadJournalForDate(prevDate);
-  };
-  navDiv.appendChild(backBtn);
-
-  // No forward beyond today
-  container.appendChild(navDiv);
-}
-
-function formatDate(date) {
-  const options = { year: 'numeric', month: 'long', day: 'numeric' };
-  return date.toLocaleDateString(undefined, options);
-}
-
-document.addEventListener('DOMContentLoaded', loadJournal);
+  function stripTime(d) {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+})();
