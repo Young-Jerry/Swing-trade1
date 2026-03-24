@@ -1,0 +1,61 @@
+<!-- mf.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mutual Funds</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header>
+  <nav>
+    <div class="logo">Portfolio Management</div>
+    <ul>
+      <li><a href="index.html">Dashboard</a></li>
+      <li><a href="trades.html">Trades</a></li>
+      <li><a href="longterm.html">Long Term</a></li>
+      <li><a href="mf.html" class="active">Mutual Funds</a></li>
+      <li><a href="journal.html">Journal</a></li>
+      <li><a href="share_calculator.html">Share Calculator</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main>
+  <h1>Mutual Funds</h1>
+  <section class="summary">
+    <div>Total Invested: <span id="totalInvested">-</span></div>
+    <div>Total Current Value: <span id="totalCurrent">-</span></div>
+    <div>Total P/L: <span id="totalPL">-</span></div>
+  </section>
+  <section class="add-mf-form">
+    <h2>Add New Mutual Fund</h2>
+    <form id="addMFForm">
+      <input type="text" id="script" placeholder="Script" required />
+      <input type="text" id="sector" placeholder="Sector" required />
+      <input type="number" id="ltp" placeholder="LTP" step="0.01" required />
+      <input type="number" id="qty" placeholder="Quantity" required />
+      <button type="submit">Add</button>
+    </form>
+  </section>
+  <section class="mf-table-container">
+    <table id="mfTable">
+      <thead>
+        <tr>
+          <th data-sort="script">Script</th>
+          <th data-sort="sector">Sector</th>
+          <th data-sort="ltp">LTP</th>
+          <th data-sort="qty">Quantity</th>
+          <th data-sort="current">Current Value</th>
+          <th data-sort="pl">P/L</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+</main>
+<script src="mf.js"></script>
+</body>
+</html>
