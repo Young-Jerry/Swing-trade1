@@ -1,104 +1,78 @@
+/* styles.css */
 body {
-  margin:0;
-  font-family:Arial;
-  background:#0b0b0b;
-  color:#eee;
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #121212;
+  color: #fff;
 }
-
 header {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:15px;
-  background:#111;
-  border-bottom:1px solid #222;
+  background-color: #1f1f1f;
+  padding: 10px 20px;
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  z-index: 100;
 }
-
-h1 { color:gold; }
-
-nav button {
-  background:#1a1a1a;
-  border:none;
-  color:#fff;
-  padding:8px 12px;
-  margin:3px;
-  cursor:pointer;
-  transition:0.2s;
+nav {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
 }
-
-nav button:hover {
-  background:gold;
-  color:#000;
+nav .logo {
+  font-weight: bold;
+  font-size: 1.2em;
 }
-
+nav ul {
+  list-style: none;
+  display: flex;
+  margin: 0;
+  padding: 0;
+}
+nav ul li {
+  margin-left: 15px;
+}
+nav ul li a {
+  color: #ffd700;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s;
+}
+nav ul li a:hover {
+  color: #fff;
+}
+main {
+  padding: 20px;
+}
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
 .card {
-  background:#111;
-  padding:20px;
-  margin:10px;
-  border-radius:10px;
+  background-color: #222;
+  padding: 15px;
+  border-radius: 8px;
+  flex: 1 1 200px;
+  font-size: 1.2em;
 }
-
-.flex { display:flex; gap:15px; flex-wrap:wrap; }
-
-input {
-  background:#0f0f0f;
-  border:1px solid #333;
-  color:#fff;
-  padding:6px;
-  margin:5px;
+.sector-allocation {
+  margin-top: 30px;
 }
-
-button.action {
-  background:gold;
-  color:black;
-  border:none;
-  padding:6px 10px;
-  cursor:pointer;
+.pie-chart-placeholder {
+  height: 200px;
+  background-color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 1em;
+  color: #ccc;
 }
-
-table {
-  width:100%;
-  border-collapse:collapse;
-  margin-top:10px;
+@media(max-width: 768px){
+  .stats {
+    flex-direction: column;
+  }
 }
-
-th,td {
-  padding:10px;
-  border-bottom:1px solid #222;
-  text-align:center;
-}
-
-th {
-  cursor:pointer;
-  background:#111;
-}
-
-.green { color:#00ff99; }
-.red { color:#ff4d4d; }
-
-.highlight { background:rgba(255,215,0,0.08); }
-
-textarea {
-  width:100%;
-  height:350px;
-  background:#111;
-  color:#fff;
-  border:1px solid #333;
-  padding:10px;
-}
-
-.calc-box {
-  display:flex;
-  gap:40px;
-}
-
-.calc-left, .calc-right {
-  flex:1;
-}
-
-.calc-right div {
-  display:flex;
-  justify-content:space-between;
-  padding:8px;
-  border-bottom:1px solid #222;
-}
+/* Additional styles for tables, forms, buttons will be in respective pages */
