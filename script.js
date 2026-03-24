@@ -1,133 +1,169 @@
-// Initial scales for MACD
-let macdScales = { green: 3, red: 3, white: 3 };
+let page="home";
 
-// Update Trade Signal dynamically
-function updateSignal() {
-    let score = 0;
+let db={
+  trades: JSON.parse(localStorage.getItem("trades"))||[],
+  long: JSON.parse(localStorage.getItem("long"))||[],
+  mf: JSON.parse(localStorage.getItem("mf"))||[]
+};
 
-    // EMA
-    const ema = document.querySelector('input[name="ema"]:checked')?.value;
-    if(ema === 'bull') score += 3;
-    else if(ema === 'bear') score -= 3;
-
-    // MACD
-    const macd = document.querySelector('input[name="macdColor"]:checked')?.value;
-    if(macd === 'green') score += macdScales.green;
-    else if(macd === 'red') score -= macdScales.red;
-    else if(macd === 'white') score += 0; // neutral
-
-    // RSI
-    const rsi = document.querySelector('input[name="rsi"]:checked')?.value;
-    if(rsi === '<30') score += 3;
-    else if(rsi === '30-40') score += 2;
-    else if(rsi === '40-70') score += 0;
-    else if(rsi === '>70') score -= 3;
-
-    // ADX
-    const adx = document.querySelector('input[name="adx"]:checked')?.value;
-    if(adx === '<20') score += 0.5;
-    else if(adx === '20-40') score += 1;
-    else if(adx === '>40') score += 1.5;
-
-    // OBV
-    const obv = document.querySelector('input[name="obv"]:checked')?.value;
-    if(obv === 'rising') score += 1.5;
-    else if(obv === 'falling') score -= 1.5;
-
-    // Volume
-    const volume = document.querySelector('input[name="volume"]:checked')?.value;
-    if(volume === 'above') score += 1;
-    else if(volume === 'average') score += 0.5;
-    else if(volume === 'below') score -= 1;
-
-    // Candlestick
-    const candle = document.querySelector('input[name="candle"]:checked')?.value;
-    if(candle === 'bull') score += 1;
-    else if(candle === 'bear') score -= 1;
-
-    // Support / Resistance
-    const sr = document.querySelector('input[name="sr"]:checked')?.value;
-    if(sr === 'support') score += 1;
-    else if(sr === 'resistance') score -= 1;
-
-    // Trend Alignment
-    const trend = document.querySelector('input[name="trend"]:checked')?.value;
-    if(trend === 'bull') score += 2;
-    else if(trend === 'bear') score -= 2;
-
-    // Chart Patterns
-    const pattern = document.querySelector('input[name="pattern"]:checked')?.value;
-    if(pattern === 'bull') score += 1;
-    else if(pattern === 'bear') score -= 1;
-
-    // News / Sentiment
-    const news = document.querySelector('input[name="news"]:checked')?.value;
-    if(news === 'positive') score += 0.5;
-    else if(news === 'negative') score -= 0.5;
-
-    // Map score to signal
-    let signal = 'Neutral';
-    let fillColor = 'yellow';
-    let glow = false;
-    if(score >= 8){ signal = 'Strong Buy'; fillColor = 'green'; glow = true; }
-    else if(score >= 4){ signal = 'Buy'; fillColor = 'green'; glow = true; }
-    else if(score <= -8){ signal = 'Strong Sell'; fillColor = 'red'; glow = true; }
-    else if(score <= -4){ signal = 'Sell'; fillColor = 'red'; glow = true; }
-
-    // Update meter
-    const meter = document.getElementById('meterFill');
-    meter.style.width = '100%';
-    meter.style.background = fillColor;
-    if(glow) meter.classList.add('glow');
-    else meter.classList.remove('glow');
-
-    // Update text
-    document.getElementById('strengthText').innerText = signal;
-
-    // Add to local log
-    addToLog(signal);
+function save(){
+  Object.keys(db).forEach(k=>localStorage.setItem(k,JSON.stringify(db[k])));
 }
 
-// Add Trade to Log
-function addToLog(signal) {
-    let log = JSON.parse(localStorage.getItem('tradeLog')) || [];
-    const time = new Date().toLocaleTimeString();
-    log.unshift(`${time}: ${signal}`);
-    if(log.length > 5) log.pop();
-    localStorage.setItem('tradeLog', JSON.stringify(log));
+function nav(p){ page=p; render(); }
 
-    const logUl = document.getElementById('tradeLog');
-    logUl.innerHTML = '';
-    log.forEach(item => { const li = document.createElement('li'); li.textContent = item; logUl.appendChild(li); });
+function render(){
+  let app=document.getElementById("app");
+
+  // HOME
+  if(page==="home"){
+    let t=total(db.trades), l=total(db.long), m=total(db.mf);
+    app.innerHTML=`
+    <div class="flex">
+      <div class="card">Trades ₨ ${fmt(t)}</div>
+      <div class="card">Long ₨ ${fmt(l)}</div>
+      <div class="card">MF ₨ ${fmt(m)}</div>
+      <div class="card">Total ₨ ${fmt(t+l+m)}</div>
+    </div>`;
+  }
+
+  // PORTFOLIOS
+  if(["trades","long","mf"].includes(page)){
+    let data=db[page];
+
+    app.innerHTML=`
+    <div class="card">
+      <input id="s" placeholder="Script">
+      <input id="sec" placeholder="Sector">
+      <input id="q" placeholder="Qty">
+      <input id="ltp" placeholder="LTP">
+      <input id="sell1" placeholder="Sell1">
+      <input id="wacc" placeholder="WACC">
+      <button class="action" onclick="add('${page}')">Add</button>
+    </div>
+
+    <table>
+      <tr>
+        <th onclick="sort('${page}','script')">Script</th>
+        <th>Sector</th>
+        <th>LTP</th>
+        <th>Sell Range</th>
+        <th>Distance</th>
+        <th>P/L</th>
+        <th>Action</th>
+      </tr>
+      ${data.map((t,i)=>row(t,i,page)).join("")}
+    </table>
+    `;
+  }
+
+  // JOURNAL
+  if(page==="journal"){
+    let d=new Date();
+    let key=d.toISOString().split("T")[0];
+    let j=JSON.parse(localStorage.getItem("journal"))||{};
+    let txt=j[key]||"";
+
+    app.innerHTML=`
+    <h2>${new Date().toDateString()}</h2>
+    <textarea oninput="saveJ(this.value)">${txt}</textarea>
+    `;
+  }
+
+  // CALCULATOR
+  if(page==="calc"){
+    app.innerHTML=`
+    <div class="calc-box">
+      <div class="calc-left">
+        <input id="amt" placeholder="Amount">
+        <button onclick="calc()">Calculate</button>
+      </div>
+      <div class="calc-right" id="res"></div>
+    </div>`;
+  }
 }
 
-// Reset group
-function resetGroup(name){
-    document.querySelectorAll(`input[name="${name}"]`).forEach(el => el.checked=false);
-    if(name==='macdColor'){
-        macdScales.green=3; macdScales.red=3; macdScales.white=3;
-        document.querySelectorAll('#macdGreenButtons button, #macdRedButtons button, #macdWhiteButtons button').forEach(b=>b.classList.remove('active'));
-    }
-    updateSignal();
+function row(t,i,type){
+  let sell2=t.sell1*1.1;
+  let dist=(t.ltp*t.qty)-(t.sell1*t.qty);
+  let pl=(t.ltp-t.wacc)*t.qty;
+  let cls=pl>=0?"green":"red";
+
+  return `
+  <tr class="${t.ltp>=t.sell1?'highlight':''}">
+    <td contenteditable onblur="edit(${i},'script',this.innerText,'${type}')">${t.script}</td>
+    <td contenteditable onblur="edit(${i},'sector',this.innerText,'${type}')">${t.sector}</td>
+    <td contenteditable onblur="edit(${i},'ltp',this.innerText,'${type}')">${t.ltp}</td>
+    <td>${t.sell1} - ${sell2.toFixed(2)}</td>
+    <td>${fmt(dist)}</td>
+    <td class="${cls}">${fmt(pl)}</td>
+    <td><button onclick="del('${type}',${i})">X</button></td>
+  </tr>`;
 }
 
-// MACD scale buttons
-function setupMacdButtons(id,type){
-    document.querySelectorAll(`#${id} button`).forEach(btn=>{
-        btn.addEventListener('click',function(){
-            document.querySelectorAll(`#${id} button`).forEach(b=>b.classList.remove('active'));
-            btn.classList.add('active');
-            macdScales[type]=parseInt(btn.dataset.value);
-            updateSignal();
-        });
-    });
+function add(type){
+  db[type].push({
+    script:s.value,
+    sector:sec.value,
+    qty:+q.value,
+    ltp:+ltp.value,
+    sell1:+sell1.value,
+    wacc:+wacc.value
+  });
+  save(); render();
 }
 
-// Initialize
-setupMacdButtons('macdGreenButtons','green');
-setupMacdButtons('macdRedButtons','red');
-setupMacdButtons('macdWhiteButtons','white');
-document.querySelectorAll('input[type="radio"]').forEach(el=>el.addEventListener('change', updateSignal));
+function edit(i,key,val,type){
+  if(["ltp","qty","sell1","wacc"].includes(key)) val=+val;
+  db[type][i][key]=val;
+  save(); render();
+}
 
-// Load previous log
-(function(){ updateSignal(); })();
+function del(type,i){
+  db[type].splice(i,1);
+  save(); render();
+}
+
+function total(arr){
+  return arr.reduce((a,b)=>a+(b.ltp*b.qty),0);
+}
+
+function sort(type,key){
+  db[type].sort((a,b)=>a[key]>b[key]?1:-1);
+  render();
+}
+
+function saveJ(val){
+  let key=new Date().toISOString().split("T")[0];
+  let j=JSON.parse(localStorage.getItem("journal"))||{};
+  j[key]=val;
+  localStorage.setItem("journal",JSON.stringify(j));
+}
+
+function calc(){
+  let amt=+document.getElementById("amt").value;
+  let r=0;
+
+  if(amt<=50000) r=0.004;
+  else if(amt<=500000) r=0.0037;
+  else if(amt<=2000000) r=0.0034;
+  else if(amt<=10000000) r=0.003;
+  else r=0.0027;
+
+  let broker=amt*r;
+  let sebon=amt*0.00015;
+  let dp=25;
+
+  document.getElementById("res").innerHTML=`
+    <div><span>Broker</span><span>${fmt(broker)}</span></div>
+    <div><span>SEBON</span><span>${fmt(sebon)}</span></div>
+    <div><span>DP</span><span>${dp}</span></div>
+    <div><span>Total</span><span>${fmt(amt+broker+sebon+dp)}</span></div>
+  `;
+}
+
+function fmt(x){
+  return Number(x).toLocaleString("en-IN");
+}
+
+render();
