@@ -1,25 +1,39 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Mission 100M </title>
-<link rel="stylesheet" href="style.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Portfolio Management System</title>
+<link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-
 <header>
-  <h1>Mission 100M</h1>
   <nav>
-    <button onclick="nav('home')">Home</button>
-    <button onclick="nav('trades')">Trades</button>
-    <button onclick="nav('long')">Long Term</button>
-    <button onclick="nav('mf')">Mutual Funds</button>
-    <button onclick="nav('journal')">Journal</button>
-    <button onclick="nav('calc')">Calculator</button>
+    <div class="logo">Portfolio Management</div>
+    <ul>
+      <li><a href="index.html">Dashboard</a></li>
+      <li><a href="trades.html">Trades</a></li>
+      <li><a href="longterm.html">Long Term</a></li>
+      <li><a href="mf.html">Mutual Funds</a></li>
+      <li><a href="journal.html">Journal</a></li>
+      <li><a href="share_calculator.html">Share Calculator</a></li>
+    </ul>
   </nav>
 </header>
 
-<main id="app"></main>
+<main id="dashboard">
+  <section class="stats">
+    <div class="card" id="totalTrades">Total Trades: 0</div>
+    <div class="card" id="totalLongTerm">Total Long Term: 0</div>
+    <div class="card" id="totalMF">Total Mutual Funds: 0</div>
+    <div class="card" id="combinedTotal">Combined Total: 0</div>
+  </section>
+  <section class="sector-allocation">
+    <h2>Sector Allocation</h2>
+    <div class="pie-chart-placeholder">[Pie Chart Placeholder]</div>
+  </section>
+</main>
 
 <script src="script.js"></script>
 </body>
