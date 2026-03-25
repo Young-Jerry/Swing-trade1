@@ -50,6 +50,91 @@
 
       drawProfitChart(rows);
     }
+  function drawProfitChart(rows) {
+    const canvas = document.getElementById('profitChart');
+    const tooltip = document.getElementById('chartTooltip');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const points = [{ index: 0, total: 0 }];
+    let cumulative = 0;
+    rows.forEach((row, index) => {
+      cumulative += exactProfit(row);
+      points.push({ index: index + 1, total: cumulative });
+    });
+    if (!points.length) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#9ba7bf';
+      ctx.font = '14px Inter, sans-serif';
+      ctx.fillText('No closed trades yet.', 24, 38);
+      return;
+    }
+
+    const pad = { left: 20, right: 20, top: 16, bottom: 20 };
+    const plotW = canvas.width - pad.left - pad.right;
+    const plotH = canvas.height - pad.top - pad.bottom;
+    const signedLog = (value) => {
+      const n = Number(value || 0);
+      if (!Number.isFinite(n) || n === 0) return 0;
+      return Math.sign(n) * Math.log10(1 + Math.abs(n));
+    };
+
+    const rawMin = Math.min(0, ...points.map((p) => p.total));
+    const transformed = points.map((p) => signedLog(p.total));
+    const minY = Math.min(...transformed, signedLog(0));
+    const maxY = Math.max(...transformed, signedLog(1));
+    const yRange = maxY - minY || 1;
+    const toX = (i) => pad.left + (i / Math.max(points.length - 1, 1)) * plotW;
+    const toY = (v) => pad.top + (1 - ((signedLog(v) - minY) / yRange)) * plotH;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#0f1d2e';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.beginPath();
+    points.forEach((p, i) => {
+      const x = toX(i);
+      const y = toY(p.total);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    const stroke = points[points.length - 1].total >= 0 ? '#00e540' : '#ea5a5a';
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    ctx.lineTo(toX(points.length - 1), toY(rawMin));
+    ctx.lineTo(toX(0), toY(rawMin));
+    ctx.closePath();
+    ctx.fillStyle = points[points.length - 1].total >= 0 ? 'rgba(0, 229, 64, 0.2)' : 'rgba(234, 90, 90, 0.2)';
+    ctx.fill();
+
+    points.forEach((p, i) => {
+      const x = toX(i);
+      const y = toY(p.total);
+      ctx.beginPath();
+      ctx.arc(x, y, i === points.length - 1 ? 4 : 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = i === points.length - 1 ? '#ffffff' : stroke;
+      ctx.fill();
+    });
+
+    canvas.onmousemove = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const relX = e.clientX - rect.left - pad.left;
+      const idx = Math.max(0, Math.min(points.length - 1, Math.round((relX / plotW) * (points.length - 1))));
+      const point = points[idx];
+      tooltip.textContent = idx === 0
+        ? 'Start: ₨0'
+        : `Trade ${idx}: Total Profit ${currency(point.total)}`;
+      tooltip.style.display = 'block';
+      tooltip.style.left = `${e.pageX + 10}px`;
+      tooltip.style.top = `${e.pageY + 10}px`;
+    };
+    canvas.onmouseleave = () => {
+      tooltip.style.display = 'none';
+    };
+  }
 
     function drawProfitChart(rows) {
       const canvas = document.getElementById('profitChart');
