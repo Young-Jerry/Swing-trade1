@@ -251,11 +251,13 @@
       const card = document.createElement('section');
       card.className = 'card modal-card mass-edit-modal';
       card.innerHTML = `
-        <div class="toolbar">
-          <h3>Mass Edit ${pageRoot.dataset.portfolioTitle || ''}</h3>
+        <div class="toolbar mass-edit-head">
+          <div>
+            <h3>Mass Edit ${pageRoot.dataset.portfolioTitle || ''}</h3>
+            <p class="subtitle">Quickly update Script, Qty, LTP, ${showRanges ? 'L.R/H.R, ' : ''}and WACC in one place.</p>
+          </div>
           <button type="button" class="btn-danger" data-close="true">Close</button>
         </div>
-        <p class="subtitle">Edit all rows quickly. Fields shown: Script, Qty, LTP, ${showRanges ? 'L.R/H.R, ' : ''}WACC.</p>
         <div class="table-wrap">
           <table>
             <thead>
@@ -266,7 +268,7 @@
             <tbody></tbody>
           </table>
         </div>
-        <div class="toolbar" style="margin-top:12px;justify-content:flex-end;">
+        <div class="toolbar mass-edit-actions">
           <button type="button" class="btn-primary" data-save="true">Save Changes</button>
         </div>
       `;
@@ -289,6 +291,7 @@
       card.querySelector('[data-close="true"]').addEventListener('click', () => backdrop.remove());
       backdrop.addEventListener('click', (e) => { if (e.target === backdrop) backdrop.remove(); });
       card.querySelector('[data-save="true"]').addEventListener('click', () => {
+        const costBefore = rows.reduce((sum, row) => sum + investedCost(row.wacc, row.qty), 0);
         const drafts = [...card.querySelectorAll('input[data-id]')];
         drafts.forEach((input) => {
           const row = rows.find((r) => r.id === input.dataset.id);
@@ -303,6 +306,8 @@
             row.sell2 = row.sell1 * 1.1;
           }
         });
+        const costAfter = rows.reduce((sum, row) => sum + investedCost(row.wacc, row.qty), 0);
+        if (window.PmsCapital) window.PmsCapital.adjustCash(costBefore - costAfter);
         persist('Mass update saved ✓');
         backdrop.remove();
       });

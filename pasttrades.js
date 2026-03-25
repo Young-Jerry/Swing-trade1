@@ -92,18 +92,19 @@
       exitedBody.innerHTML = '';
 
       exited.forEach((row) => {
+        const normalized = normalizeExited(row);
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${row.type}</td>
-          <td>${escapeHtml(row.name)}</td>
-          <td>${currency(row.buyPrice)}</td>
-          <td>${currency(row.soldPrice || row.currentPrice || 0)}</td>
-          <td class="${profitClass(row.profit)}">${currency(row.profit)}<div class="subtitle">Tax: ${currency(row.capitalGainTax || 0)}</div></td>
-          <td class="${profitClass(row.perDayProfit)}">${currency(row.perDayProfit)}</td>
-          <td>${Math.floor(Number(row.holdingDays || 0))}</td>
+          <td>${normalized.type}</td>
+          <td>${escapeHtml(normalized.name)}</td>
+          <td>${currency(normalized.buyPrice)}</td>
+          <td>${currency(normalized.soldPrice || normalized.currentPrice || 0)}</td>
+          <td class="${profitClass(normalized.profit)}">${currency(normalized.profit)}<div class="subtitle">Tax: ${currency(normalized.capitalGainTax || 0)}</div></td>
+          <td class="${profitClass(normalized.perDayProfit)}">${currency(normalized.perDayProfit)}</td>
+          <td>${Math.floor(Number(normalized.holdingDays || 0))}</td>
           <td class="actions-cell">
-            <button class="btn-secondary" data-action="edit" data-id="${row.id}">✏️</button>
-            <button class="btn-danger" data-action="delete" data-id="${row.id}">🗑️</button>
+            <button class="btn-secondary" data-action="edit" data-id="${normalized.id}">✏️</button>
+            <button class="btn-danger" data-action="delete" data-id="${normalized.id}">🗑️</button>
           </td>
         `;
         exitedBody.appendChild(tr);
@@ -128,14 +129,18 @@
       const exited = readJson(EXITED_KEY);
       const row = exited.find((item) => item.id === id);
       if (!row) return;
+      const normalized = normalizeExited(row);
 
-      const holdingDays = prompt('Holding Days', String(row.holdingDays));
+      const holdingDays = prompt('Holding Days', String(normalized.holdingDays));
       if (holdingDays === null) return;
       const parsed = Math.floor(Number(holdingDays));
       if (!Number.isFinite(parsed) || parsed < 0) return;
 
       row.holdingDays = parsed;
-      row.perDayProfit = parsed > 0 ? row.profit / parsed : row.profit;
+      row.profit = normalized.profit;
+      row.capitalGainTax = normalized.capitalGainTax;
+      row.perDayProfit = parsed > 0 ? normalized.profit / parsed : normalized.profit;
+      row.netSoldTotal = normalized.netSoldTotal;
       localStorage.setItem(EXITED_KEY, JSON.stringify(exited));
       renderExited();
     }
@@ -194,6 +199,25 @@
           realizedAmount: Number(soldPrice || 0) * Number(qty || 0),
           profit: (Number(soldPrice || 0) - Number(buyPrice || 0)) * Number(qty || 0),
         }),
+      };
+    }
+
+    function normalizeExited(row) {
+      const calc = tradeMath().calculateRoundTrip({
+        buyPrice: row.buyPrice,
+        soldPrice: row.soldPrice || row.currentPrice || 0,
+        qty: row.qty,
+      });
+      const profit = Number(calc.netProfit || calc.profit || row.profit || 0);
+      const capitalGainTax = Number(calc.capitalGainTax || row.capitalGainTax || 0);
+      const holdingDays = Math.floor(Number(row.holdingDays || 0));
+      return {
+        ...row,
+        capitalGainTax,
+        profit,
+        netSoldTotal: Number(calc.netRealizedAmount || row.netSoldTotal || row.soldTotal || 0),
+        perDayProfit: holdingDays > 0 ? profit / holdingDays : profit,
+        holdingDays,
       };
     }
 

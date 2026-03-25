@@ -443,7 +443,7 @@
     }
 
     function currency(value) {
-      return `₨${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(value || 0)}`;
+      return `Rs ${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(value || 0)}`;
     }
   };
 

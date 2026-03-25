@@ -14,6 +14,7 @@
         <li><a class="active" href="index.html">Dashboard</a></li>
         <li><a href="trades.html">Trades</a></li>
         <li><a href="longterm.html">Long Term</a></li>
+        <li><a href="mf.html">SIP System</a></li>
                 <li><a href="pasttrades.html">Past Trades</a></li>
         <li><a href="journal.html">📚</a></li>
         <li><a href="share_calculator.html">🧮</a></li>
@@ -35,6 +36,10 @@
         <div class="stat-label">Total Value of Long Term</div>
         <div class="stat-value" id="totalLongTerm">Rs 0</div>
       </article>
+      <article class="card stat-card">
+        <div class="stat-label">Total SIP Value</div>
+        <div class="stat-value" id="totalSip">Rs 0</div>
+      </article>
             <article class="card stat-card">
         <div class="stat-label">Portfolio Value (DP Holding)</div>
         <div class="stat-value" id="combinedTotal">Rs 0</div>
@@ -48,7 +53,7 @@
     <section class="dashboard-layout">
       <article class="card pie-wrap">
         <h3>Portfolio Allocation</h3>
-        <p class="subtitle">Trades vs Long Term</p>
+        <p class="subtitle">Trades vs Long Term vs SIP</p>
         <div id="allocationPie" aria-label="Allocation pie chart"></div>
       </article>
       <article class="card pie-wrap">
