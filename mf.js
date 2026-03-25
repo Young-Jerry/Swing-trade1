@@ -71,7 +71,7 @@
         if (!sipName || !isValidMonth(month)) return show('Select a valid month.');
         if (!Number.isFinite(units) || !Number.isFinite(nav) || units <= 0 || nav <= 0) return show('Invalid QTY/NAV.');
         if (!isMonthAllowed(sipName, month)) return show(`Month must be on/after ${minimumMonthForSip(sipName)}.`);
-        if (monthExists(sipName, month)) return show('This SIP already has an installment in that month. Delete it from SIP History to reuse the month.');
+        if (monthExists(sipName, month)) return show('This month is already paid and locked for the selected SIP.');
 
         addEntry(sipName, {
           id: crypto.randomUUID(),
@@ -179,33 +179,13 @@
           <td>${fmtUnits(row.units)}</td>
           <td>${fmtNav(row.nav)}</td>
           <td>${currency(row.amount)}</td>
-          <td>${historySip === 'ALL'
-            ? `<button class="btn-secondary" data-action="viewSip" data-sip="${row.sipName}">View</button>`
-            : `<button class="btn-danger" data-action="deleteRow" data-sip="${row.sipName}" data-id="${row.id}">Delete</button>`}</td>
         `;
         tbody.appendChild(tr);
       });
 
-      tbody.querySelectorAll('button[data-action="viewSip"]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          historySip = btn.dataset.sip;
-          historySipSelect.value = historySip;
-          renderHistory();
-        });
-      });
-
-      tbody.querySelectorAll('button[data-action="deleteRow"]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const sip = btn.dataset.sip;
-          const id = btn.dataset.id;
-          state.records[sip] = (state.records[sip] || []).filter((row) => row.id !== id);
-          persist('SIP history row deleted.');
-        });
-      });
-
       if (!rows.length) {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="${historySip === 'ALL' ? 5 : 6}">No SIP history found for this selection.</td>`;
+        tr.innerHTML = `<td colspan="${historySip === 'ALL' ? 4 : 5}">No SIP history found for this selection.</td>`;
         tbody.appendChild(tr);
       }
     }
@@ -227,7 +207,6 @@
             <th>Units</th>
             <th>NAV</th>
             <th>Amount</th>
-            <th>Action</th>
           </tr>
         `;
         return Array.from(merged.values())
@@ -256,7 +235,6 @@
           <th>Units</th>
           <th>NAV</th>
           <th>Amount</th>
-          <th>Action</th>
         </tr>
       `;
       return merged.sort((a, b) => a.date.localeCompare(b.date));
@@ -269,9 +247,6 @@
       monthInput.min = minMonth;
       if (!monthInput.value || monthInput.value < minMonth) {
         monthInput.value = minMonth;
-      }
-      if (monthExists(sip, monthInput.value)) {
-        monthInput.value = nextFreeMonth(sip, monthInput.value);
       }
       syncInstallmentDateDisplay();
     }
@@ -320,17 +295,6 @@
     function monthExists(sipName, month) {
       const date = month15(month);
       return (state.records[sipName] || []).some((row) => row.date === date);
-    }
-
-    function nextFreeMonth(sipName, fromMonth) {
-      const base = `${fromMonth}-01T00:00:00Z`;
-      const cursor = new Date(base);
-      for (let i = 0; i < 120; i += 1) {
-        const month = cursor.toISOString().slice(0, 7);
-        if (!monthExists(sipName, month) && month >= minimumMonthForSip(sipName)) return month;
-        cursor.setUTCMonth(cursor.getUTCMonth() + 1);
-      }
-      return fromMonth;
     }
 
     function latestNav(sipName) {
