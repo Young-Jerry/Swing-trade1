@@ -24,7 +24,7 @@
 
   <main class="container">
     <h1>SIP System</h1>
-    <p class="subtitle">Structured SIPs with cleaner controls and selectable history.</p>
+    <p class="subtitle">Installment based SIPs with cleaner history controls.</p>
 
     <section class="card section">
       <div class="toolbar">
@@ -39,6 +39,15 @@
     </section>
 
     <section class="card section">
+      <h3>Change NAV</h3>
+      <form id="navForm" class="form-grid" autocomplete="off">
+        <label>SIP<select name="sipName" required></select></label>
+        <label>New NAV<input name="nav" type="number" min="0.01" step="0.0001" required /></label>
+        <button class="btn-secondary" type="submit">Update NAV</button>
+      </form>
+    </section>
+
+    <section class="card section">
       <h3>Add Manual SIP</h3>
       <form id="manualSipForm" class="form-grid" autocomplete="off">
         <label>New SIP Name
@@ -50,27 +59,19 @@
     </section>
 
     <section class="card section">
-      <h3>Add Lump Sum SIP</h3>
-      <form id="lumpSumForm" class="form-grid" autocomplete="off">
+      <h3>Installment</h3>
+      <form id="installmentForm" class="form-grid" autocomplete="off">
         <label>SIP<select name="sipName" required></select></label>
-        <label>Amount<input name="amount" type="number" min="1" step="0.01" required /></label>
+        <label>Month
+          <input name="month" type="month" required />
+        </label>
+        <label>Date
+          <input name="date" type="text" readonly value="15th (auto)" />
+        </label>
+        <label>QTY<input name="units" type="number" min="1" step="1" required /></label>
         <label>NAV<input name="nav" type="number" min="0.01" step="0.0001" required /></label>
-        <button class="btn-primary" type="submit">Add Lump Sum</button>
+        <button class="btn-primary" type="submit">Add Installment</button>
       </form>
-    </section>
-
-    <section class="card section">
-      <h3>Change NAV</h3>
-      <form id="navForm" class="form-grid" autocomplete="off">
-        <label>SIP<select name="sipName" required></select></label>
-        <label>New NAV<input name="nav" type="number" min="0.01" step="0.0001" required /></label>
-        <button class="btn-secondary" type="submit">Update NAV</button>
-      </form>
-    </section>
-
-    <section class="card section">
-      <h3>Dues (15th of each month)</h3>
-      <ul id="pendingDues" class="legend"></ul>
     </section>
 
     <section class="card section">
@@ -96,36 +97,7 @@
         </table>
       </div>
     </section>
-
-    <section class="card section">
-      <h3>Backup / Restore SIP Data</h3>
-      <div class="actions-cell">
-        <button id="downloadSipData" class="btn-secondary" type="button">Download SIP Data</button>
-        <label class="btn-secondary file-btn">Restore SIP Data
-          <input id="restoreSipData" type="file" accept="application/json" />
-        </label>
-      </div>
-    </section>
   </main>
-
-  <div class="modal hidden" id="dueModal">
-    <div class="modal-card card">
-      <h3>Fill SIP Due</h3>
-      <p id="dueModalTitle" class="subtitle"></p>
-      <form id="dueForm" class="form-grid" autocomplete="off">
-        <label>Units (whole number)
-          <input name="units" type="number" min="1" step="1" required />
-        </label>
-        <label>NAV
-          <input name="nav" type="number" min="0.01" step="0.0001" required />
-        </label>
-        <div class="actions-cell">
-          <button class="btn-primary" type="submit">Save Due</button>
-          <button class="btn-danger" type="button" id="closeDueModal">Cancel</button>
-        </div>
-      </form>
-    </div>
-  </div>
 
   <script src="mf.js"></script>
 </body>

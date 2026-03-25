@@ -1,34 +1,29 @@
 (function () {
-  const SIP_STATE_KEY = 'sipStateV3';
-  const LEGACY_KEYS = ['sipStateV2', 'sipData'];
+  const SIP_STATE_KEY = 'sipStateV4';
+  const LEGACY_KEYS = ['sipStateV3', 'sipStateV2', 'sipData'];
   const defaultSips = ['SSIS', 'KSLY'];
+  const forcedStartMonth = {
+    SSIS: '2025-07',
+    KSLY: '2026-02',
+  };
 
   const tabs = document.getElementById('sipTabs');
   const manualSipForm = document.getElementById('manualSipForm');
-  const lumpSumForm = document.getElementById('lumpSumForm');
+  const installmentForm = document.getElementById('installmentForm');
   const navForm = document.getElementById('navForm');
   const deleteSipBtn = document.getElementById('deleteSipBtn');
   const historySipSelect = document.getElementById('historySipSelect');
   const tbody = document.querySelector('#sipTable tbody');
-  const pendingDues = document.getElementById('pendingDues');
   const msg = document.getElementById('sipMessage');
   const currentNavItem = document.getElementById('sipCurrentNavItem');
-  const downloadSipDataBtn = document.getElementById('downloadSipData');
-  const restoreSipDataInput = document.getElementById('restoreSipData');
 
-  const dueModal = document.getElementById('dueModal');
-  const dueForm = document.getElementById('dueForm');
-  const closeDueModalBtn = document.getElementById('closeDueModal');
-  const dueModalTitle = document.getElementById('dueModalTitle');
-
-  if (!tabs || !manualSipForm || !dueForm) return;
+  if (!tabs || !manualSipForm || !installmentForm || !navForm) return;
 
   let state = readState();
   let activeSip = state.activeSip && (state.activeSip === 'ALL_SIP' || state.sips.includes(state.activeSip))
     ? state.activeSip
     : 'ALL_SIP';
   let historySip = 'ALL';
-  let dueContext = null;
 
   bindEvents();
   render();
@@ -42,7 +37,7 @@
       state.sips.push(name);
       state.records[name] = state.records[name] || [];
       state.currentNav[name] = state.currentNav[name] || 0;
-      state.registeredAt[name] = today();
+      state.registeredAt[name] = month15(todayMonth());
       activeSip = name;
       manualSipForm.reset();
       persist('Manual SIP added.');
@@ -60,22 +55,26 @@
       persist('SIP deleted.');
     });
 
-    lumpSumForm.addEventListener('submit', (e) => {
+    installmentForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      const fd = new FormData(lumpSumForm);
+      const fd = new FormData(installmentForm);
       const sipName = String(fd.get('sipName'));
-      const amount = num(fd.get('amount'));
+      const month = String(fd.get('month'));
+      const units = Math.floor(num(fd.get('units')));
       const nav = num(fd.get('nav'));
-      if (!Number.isFinite(amount) || !Number.isFinite(nav) || amount <= 0 || nav <= 0) return;
+      if (!sipName || !isValidMonth(month)) return show('Select a valid month.');
+      if (!Number.isFinite(units) || !Number.isFinite(nav) || units <= 0 || nav <= 0) return show('Invalid QTY/NAV.');
+      if (!isMonthAllowed(sipName, month)) return show(`Month must be on/after ${minimumMonthForSip(sipName)}.`);
 
-      addEntry(sipName, {
+      addOrMergeEntry(sipName, {
         id: crypto.randomUUID(),
-        date: today(),
-        units: Math.floor(amount / nav),
+        date: month15(month),
+        units,
         nav,
       });
-      lumpSumForm.reset();
-      persist('Lump sum entry added.');
+
+      installmentForm.reset();
+      persist('Installment added.');
     });
 
     navForm.addEventListener('submit', (e) => {
@@ -93,34 +92,8 @@
       renderHistory();
     });
 
-    dueForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      if (!dueContext) return;
-      const fd = new FormData(dueForm);
-      const units = Math.floor(num(fd.get('units')));
-      const nav = num(fd.get('nav'));
-      if (!Number.isFinite(units) || !Number.isFinite(nav) || units <= 0 || nav <= 0) {
-        show('Invalid Units/NAV. Due not saved.');
-        return;
-      }
-
-      addEntry(dueContext.sip, {
-        id: crypto.randomUUID(),
-        date: dueContext.dueDate,
-        units,
-        nav,
-      });
-      closeDueModal();
-      persist(`Due resolved for ${dueContext.sip}.`);
-    });
-
-    closeDueModalBtn.addEventListener('click', closeDueModal);
-    dueModal.addEventListener('click', (e) => {
-      if (e.target === dueModal) closeDueModal();
-    });
-
-    downloadSipDataBtn.addEventListener('click', downloadSipData);
-    restoreSipDataInput.addEventListener('change', restoreSipData);
+    installmentForm.elements.sipName.addEventListener('change', syncInstallmentMinMonth);
+    installmentForm.elements.month.addEventListener('change', syncInstallmentDateDisplay);
   }
 
   function render() {
@@ -152,7 +125,6 @@
     }
 
     state.activeSip = activeSip;
-    renderDues();
     renderHistory();
   }
 
@@ -183,19 +155,15 @@
       .concat(state.sips.map((name) => `<option value="${name}">${name}</option>`))
       .join('');
     historySipSelect.value = historySip;
+
+    syncInstallmentMinMonth();
+    syncInstallmentDateDisplay();
   }
 
   function renderHistory() {
-    const rows = [];
-    const sipNames = historySip === 'ALL' ? state.sips : [historySip];
+    const rows = historyRows();
 
-    sipNames.forEach((sipName) => {
-      (state.records[sipName] || []).forEach((row) => rows.push({ ...row, sipName }));
-    });
-
-    rows.sort((a, b) => a.date.localeCompare(b.date));
     tbody.innerHTML = '';
-
     rows.forEach((row) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -225,63 +193,70 @@
     }
   }
 
-  function renderDues() {
-    pendingDues.innerHTML = '';
+  function historyRows() {
+    const sipNames = historySip === 'ALL' ? state.sips : [historySip];
+    const merged = new Map();
 
-    state.sips.forEach((sip) => {
-      dueMonthsUntilNow(sip).forEach((dueDate) => {
-        const hasEntry = (state.records[sip] || []).some((r) => r.date === dueDate);
-        if (hasEntry) return;
-
-        const li = document.createElement('li');
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'btn-secondary';
-        btn.textContent = 'Fill Due';
-        btn.onclick = () => openDueModal(sip, dueDate);
-
-        li.innerHTML = `<span>${sip}: Missing entry for ${dueDate}</span><strong>Pending</strong>`;
-        li.appendChild(btn);
-        pendingDues.appendChild(li);
+    sipNames.forEach((sipName) => {
+      (state.records[sipName] || []).forEach((row) => {
+        const key = `${sipName}__${row.date}`;
+        const prev = merged.get(key) || {
+          id: row.id,
+          date: row.date,
+          sipName,
+          units: 0,
+          amount: 0,
+        };
+        prev.units += Number(row.units || 0);
+        prev.amount += Number(row.amount || (Number(row.units || 0) * Number(row.nav || 0)));
+        merged.set(key, prev);
       });
     });
 
-    if (!pendingDues.children.length) {
-      pendingDues.innerHTML = '<li><span>No pending dues.</span><strong>✓</strong></li>';
+    return Array.from(merged.values())
+      .map((r) => ({
+        ...r,
+        nav: r.units > 0 ? r.amount / r.units : 0,
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date) || a.sipName.localeCompare(b.sipName));
+  }
+
+  function syncInstallmentMinMonth() {
+    const sip = installmentForm.elements.sipName.value;
+    const monthInput = installmentForm.elements.month;
+    const minMonth = minimumMonthForSip(sip);
+    monthInput.min = minMonth;
+    if (!monthInput.value || monthInput.value < minMonth) {
+      monthInput.value = minMonth;
     }
+    syncInstallmentDateDisplay();
   }
 
-  function openDueModal(sip, dueDate) {
-    dueContext = { sip, dueDate };
-    dueModalTitle.textContent = `${sip} due of ${dueDate}`;
-    dueForm.reset();
-    dueModal.classList.remove('hidden');
+  function syncInstallmentDateDisplay() {
+    const month = installmentForm.elements.month.value || minimumMonthForSip(installmentForm.elements.sipName.value);
+    installmentForm.elements.date.value = `${month}-15`;
   }
 
-  function closeDueModal() {
-    dueContext = null;
-    dueModal.classList.add('hidden');
+  function minimumMonthForSip(sipName) {
+    if (forcedStartMonth[sipName]) return forcedStartMonth[sipName];
+    const reg = String(state.registeredAt[sipName] || today()).slice(0, 7);
+    return isValidMonth(reg) ? reg : todayMonth();
   }
 
-  function dueMonthsUntilNow(sipName) {
-    const list = [];
-    const start = new Date(state.registeredAt[sipName] || today());
-    const now = new Date();
-    let y = start.getUTCFullYear();
-    let m = start.getUTCMonth();
-
-    while (y < now.getUTCFullYear() || (y === now.getUTCFullYear() && m <= now.getUTCMonth())) {
-      list.push(`${y}-${String(m + 1).padStart(2, '0')}-15`);
-      m += 1;
-      if (m > 11) {
-        y += 1;
-        m = 0;
-      }
-    }
-    return list;
+  function isMonthAllowed(sipName, month) {
+    const minMonth = minimumMonthForSip(sipName);
+    return month >= minMonth;
   }
 
-  function addEntry(sipName, record) {
+  function isValidMonth(value) {
+    return /^\d{4}-\d{2}$/.test(value);
+  }
+
+  function month15(month) {
+    return `${month}-15`;
+  }
+
+  function addOrMergeEntry(sipName, record) {
     state.records[sipName] = state.records[sipName] || [];
     const sanitized = {
       id: record.id,
@@ -291,8 +266,17 @@
     };
     sanitized.amount = sanitized.units * sanitized.nav;
 
-    state.records[sipName] = (state.records[sipName] || []).filter((item) => item.date !== sanitized.date);
-    state.records[sipName].push(sanitized);
+    const existing = state.records[sipName].find((item) => item.date === sanitized.date);
+    if (existing) {
+      const mergedUnits = Number(existing.units || 0) + sanitized.units;
+      const mergedAmount = Number(existing.amount || (existing.units * existing.nav)) + sanitized.amount;
+      existing.units = mergedUnits;
+      existing.amount = mergedAmount;
+      existing.nav = mergedUnits > 0 ? mergedAmount / mergedUnits : sanitized.nav;
+    } else {
+      state.records[sipName].push(sanitized);
+    }
+
     state.currentNav[sipName] = sanitized.nav;
     activeSip = sipName;
   }
@@ -310,7 +294,7 @@
     for (const key of LEGACY_KEYS) {
       const legacy = JSON.parse(localStorage.getItem(key) || 'null');
       if (!legacy) continue;
-      if (key === 'sipStateV2' && Array.isArray(legacy.sips)) {
+      if ((key === 'sipStateV3' || key === 'sipStateV2') && Array.isArray(legacy.sips)) {
         return normalizeState(legacy);
       }
 
@@ -336,14 +320,16 @@
       records[sip] = Array.isArray((input.records || {})[sip])
         ? input.records[sip].map((r) => ({
           id: r.id || crypto.randomUUID(),
-          date: String(r.date || today()),
+          date: String(r.date || month15(todayMonth())),
           units: Math.floor(Number(r.units || (Number(r.amount || 0) / Number(r.nav || 1)))),
           nav: Number(r.nav || 0),
           amount: Math.floor(Number(r.units || (Number(r.amount || 0) / Number(r.nav || 1)))) * Number(r.nav || 0),
         }))
         : [];
+      records[sip].sort((a, b) => a.date.localeCompare(b.date));
+
       if (!registeredAt[sip]) {
-        const firstDate = records[sip][0]?.date || today();
+        const firstDate = records[sip][0]?.date || month15(todayMonth());
         registeredAt[sip] = firstDate;
       }
       if (!Number.isFinite(currentNav[sip])) {
@@ -366,36 +352,6 @@
     render();
   }
 
-  function downloadSipData() {
-    const data = JSON.stringify(state, null, 2);
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `sip-backup-${today()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    show('SIP backup downloaded.');
-  }
-
-  function restoreSipData(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const parsed = JSON.parse(String(reader.result || '{}'));
-        state = normalizeState(parsed);
-        activeSip = state.activeSip || 'ALL_SIP';
-        historySip = 'ALL';
-        persist('SIP backup restored.');
-      } catch (err) {
-        show('Invalid backup file.');
-      }
-    };
-    reader.readAsText(file);
-  }
-
   function show(text) {
     msg.textContent = text;
   }
@@ -406,6 +362,10 @@
 
   function num(value) {
     return Number.parseFloat(value);
+  }
+
+  function todayMonth() {
+    return new Date().toISOString().slice(0, 7);
   }
 
   function today() {
