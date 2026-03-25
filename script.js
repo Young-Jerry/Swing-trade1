@@ -22,6 +22,77 @@
 
     renderPie(totals, combined);
     renderProfitPanel();
+    bindBackupControls();
+
+    function bindBackupControls() {
+      const downloadBtn = document.getElementById('downloadPortfolioBtn');
+      const uploadInput = document.getElementById('uploadPortfolioInput');
+      const statusNode = document.getElementById('backupStatus');
+      if (!downloadBtn || !uploadInput || !statusNode) return;
+
+      downloadBtn.addEventListener('click', () => {
+        try {
+          const snapshot = createPortfolioSnapshot();
+          const json = JSON.stringify(snapshot, null, 2);
+          const blob = new Blob([json], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `portfolio-backup-${new Date().toISOString().slice(0, 10)}.json`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          statusNode.textContent = 'Backup file downloaded ✓';
+        } catch (error) {
+          statusNode.textContent = 'Backup failed. Try again.';
+          console.error('Portfolio backup download failed:', error);
+        }
+      });
+
+      uploadInput.addEventListener('change', async (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        try {
+          const text = await file.text();
+          const payload = JSON.parse(text);
+          restorePortfolioSnapshot(payload);
+          statusNode.textContent = 'Backup restored ✓ Reloading...';
+          setTimeout(() => location.reload(), 400);
+        } catch (error) {
+          statusNode.textContent = 'Invalid backup file.';
+          console.error('Portfolio backup upload failed:', error);
+        } finally {
+          uploadInput.value = '';
+        }
+      });
+    }
+
+    function createPortfolioSnapshot() {
+      const data = {};
+      for (let i = 0; i < localStorage.length; i += 1) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+        data[key] = localStorage.getItem(key);
+      }
+      return {
+        format: 'pms-local-backup-v1',
+        exportedAt: new Date().toISOString(),
+        data,
+      };
+    }
+
+    function restorePortfolioSnapshot(payload) {
+      const backup = payload && typeof payload === 'object' ? payload : null;
+      if (!backup || backup.format !== 'pms-local-backup-v1' || !backup.data || typeof backup.data !== 'object') {
+        throw new Error('Unexpected backup format');
+      }
+      localStorage.clear();
+      Object.entries(backup.data).forEach(([key, value]) => {
+        if (typeof key !== 'string' || typeof value !== 'string') return;
+        localStorage.setItem(key, value);
+      });
+    }
 
     function tradeLikeTotal(key) {
       const rows = JSON.parse(localStorage.getItem(key) || '[]');
