@@ -45,15 +45,15 @@
     wrap.innerHTML = `
       <div class="cash-widget-value">
         <span class="cash-widget-label">Cash Balance</span>
-        <strong id="topCashBalance">₨0</strong>
+        <strong id="topCashBalance">Rs 0</strong>
       </div>
-      <button type="button" id="topCashEditBtn" class="btn-secondary">Update Cash</button>
+      <button type="button" id="topCashEditBtn" class="btn-icon" title="Edit cash" aria-label="Edit cash balance">✏️</button>
     `;
     nav.appendChild(wrap);
 
     const btn = wrap.querySelector('#topCashEditBtn');
     btn.addEventListener('click', () => {
-      const entered = prompt('Enter cash balance amount (NPR):', String(readCash()));
+      const entered = prompt('Enter cash balance amount (NPR):', String(Math.round(readCash())));
       if (entered === null) return;
       const parsed = Number.parseFloat(entered);
       if (!Number.isFinite(parsed)) return;
@@ -67,6 +67,18 @@
 
     const dashboardCash = document.getElementById('dashboardCashBalance');
     if (dashboardCash) dashboardCash.textContent = money(readCash());
+
+    const dashboardEditBtn = document.getElementById('dashboardCashEditBtn');
+    if (dashboardEditBtn && !dashboardEditBtn.dataset.bound) {
+      dashboardEditBtn.dataset.bound = 'true';
+      dashboardEditBtn.addEventListener('click', () => {
+        const entered = prompt('Enter cash balance amount (NPR):', String(Math.round(readCash())));
+        if (entered === null) return;
+        const parsed = Number.parseFloat(entered);
+        if (!Number.isFinite(parsed)) return;
+        setCash(parsed);
+      });
+    }
 
     const investedNode = document.getElementById('openInvestedCapital');
     if (investedNode) investedNode.textContent = money(investedCapital());
@@ -82,7 +94,8 @@
   }
 
   function money(value) {
-    return `₨${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(Number(value || 0))}`;
+    const rounded = Math.round(Number(value || 0));
+    return `Rs ${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(rounded)}`;
   }
 
   window.PmsCapital = {

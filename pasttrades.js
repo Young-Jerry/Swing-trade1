@@ -6,9 +6,6 @@
     booted = true;
     const TRADES_KEY = 'trades';
     const LONGTERM_KEY = 'longterm';
-    const SIP_STATE_KEY = 'sipStateV4';
-    const SIP_STATE_V3_KEY = 'sipStateV3';
-    const SIP_STATE_OLD_KEY = 'sipStateV2';
     const EXITED_KEY = 'exitedTradesV2';
 
     const exitForm = document.getElementById('exitForm');
@@ -44,7 +41,9 @@
           soldPrice,
           qty: record.qty,
         });
-        const profit = roundTrip.profit;
+        const grossProfit = Number(roundTrip.grossProfit || roundTrip.profit || 0);
+        const capitalGainTax = Number(roundTrip.capitalGainTax || 0);
+        const profit = Number(roundTrip.netProfit || roundTrip.profit || 0);
         const perDayProfit = holdingDays > 0 ? profit / holdingDays : profit;
 
         const exited = readJson(EXITED_KEY);
@@ -57,13 +56,16 @@
           soldPrice,
           buyTotal: roundTrip.invested,
           soldTotal: roundTrip.realizedAmount,
+          netSoldTotal: Number(roundTrip.netRealizedAmount || roundTrip.realizedAmount || 0),
+          grossProfit,
+          capitalGainTax,
           profit,
           perDayProfit,
           holdingDays,
         });
 
         localStorage.setItem(EXITED_KEY, JSON.stringify(exited));
-        if (window.PmsCapital) window.PmsCapital.adjustCash(roundTrip.realizedAmount);
+        if (window.PmsCapital) window.PmsCapital.adjustCash(Number(roundTrip.netRealizedAmount || roundTrip.realizedAmount || 0));
         removeRecord(record);
         soldPriceInput.value = '';
         holdingDaysInput.value = '';
@@ -96,7 +98,7 @@
           <td>${escapeHtml(row.name)}</td>
           <td>${currency(row.buyPrice)}</td>
           <td>${currency(row.soldPrice || row.currentPrice || 0)}</td>
-          <td class="${profitClass(row.profit)}">${currency(row.profit)}</td>
+          <td class="${profitClass(row.profit)}">${currency(row.profit)}<div class="subtitle">Tax: ${currency(row.capitalGainTax || 0)}</div></td>
           <td class="${profitClass(row.perDayProfit)}">${currency(row.perDayProfit)}</td>
           <td>${Math.floor(Number(row.holdingDays || 0))}</td>
           <td class="actions-cell">
@@ -141,7 +143,7 @@
     function deleteExited(id) {
       const current = readJson(EXITED_KEY);
       const target = current.find((row) => row.id === id);
-      if (target && window.PmsCapital) window.PmsCapital.adjustCash(-Number(target.soldTotal || 0));
+      if (target && window.PmsCapital) window.PmsCapital.adjustCash(-Number(target.netSoldTotal || target.soldTotal || 0));
       const exited = current.filter((row) => row.id !== id);
       localStorage.setItem(EXITED_KEY, JSON.stringify(exited));
       renderExited();
@@ -169,26 +171,6 @@
           currentPrice: Number(row.ltp || 0),
           ref: 'longterm',
         })),
-        sip: () => {
-          const sipState = JSON.parse(localStorage.getItem(SIP_STATE_KEY) || localStorage.getItem(SIP_STATE_V3_KEY) || localStorage.getItem(SIP_STATE_OLD_KEY) || '{}');
-          const rows = [];
-          Object.entries(sipState.records || {}).forEach(([sipName, records]) => {
-            records.forEach((row) => {
-              rows.push({
-                id: `s-${sipName}-${row.id}`,
-                rawId: row.id,
-                sipName,
-                source: 'SIP',
-                name: sipName,
-                qty: Number(row.units || 0),
-                buyPrice: Number(row.nav || 0),
-                currentPrice: Number((sipState.currentNav || {})[sipName] || row.nav || 0),
-                ref: 'sip',
-              });
-            });
-          });
-          return rows;
-        },
       };
 
       return (builders[type] || (() => []))();
@@ -202,13 +184,6 @@
         return;
       }
 
-      const key = localStorage.getItem(SIP_STATE_KEY)
-        ? SIP_STATE_KEY
-        : (localStorage.getItem(SIP_STATE_V3_KEY) ? SIP_STATE_V3_KEY : SIP_STATE_OLD_KEY);
-      const sipState = JSON.parse(localStorage.getItem(key) || '{}');
-      sipState.records = sipState.records || {};
-      sipState.records[record.sipName] = (sipState.records[record.sipName] || []).filter((r) => r.id !== record.rawId);
-      localStorage.setItem(key, JSON.stringify(sipState));
     }
 
 
@@ -231,7 +206,7 @@
     }
 
     function currency(value) {
-      return `₨${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(value || 0)}`;
+      return `Rs ${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(value || 0)}`;
     }
 
     function profitClass(value) {

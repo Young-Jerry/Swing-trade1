@@ -8,7 +8,6 @@
     const keys = [
       { id: 'trades', label: 'Trades', node: 'totalTrades', total: tradeLikeTotal },
       { id: 'longterm', label: 'Long Term', node: 'totalLongTerm', total: tradeLikeTotal },
-      { id: 'sipStateV4', label: 'SIP System', node: 'totalMF', total: sipTotal },
     ];
 
     const totals = keys.map((k) => ({ ...k, value: k.total(k.id) }));
@@ -114,14 +113,12 @@
   function renderProfitPanel() {
     const rows = JSON.parse(localStorage.getItem('exitedTradesV2') || '[]');
     const totalProfit = rows.reduce((sum, row) => sum + exactProfit(row), 0);
-    const totalInvested = rows.reduce((sum, row) => sum + exactInvested(row), 0);
     const wins = rows.filter((row) => exactProfit(row) > 0).length;
     const losses = rows.filter((row) => exactProfit(row) < 0).length;
 
     const profitNode = document.getElementById('profitValue');
     profitNode.textContent = currency(totalProfit);
     profitNode.className = totalProfit >= 0 ? 'value-profit' : 'value-loss';
-    document.getElementById('totalInvested').textContent = currency(totalInvested);
     document.getElementById('winCount').textContent = String(wins);
     document.getElementById('lossCount').textContent = String(losses);
 
@@ -145,38 +142,36 @@
     const pad = { left: 20, right: 20, top: 16, bottom: 20 };
     const plotW = canvas.width - pad.left - pad.right;
     const plotH = canvas.height - pad.top - pad.bottom;
-    const signedLog = (value) => {
-      const n = Number(value || 0);
-      if (!Number.isFinite(n) || n === 0) return 0;
-      return Math.sign(n) * Math.log10(1 + Math.abs(n));
-    };
-
-    const rawMin = Math.min(0, ...points.map((p) => p.total));
-    const transformed = points.map((p) => signedLog(p.total));
-    const minY = Math.min(...transformed, signedLog(0));
-    const maxY = Math.max(...transformed, signedLog(1));
-    const yRange = maxY - minY || 1;
+    const values = points.map((p) => p.total);
+    const minY = Math.min(0, ...values);
+    const maxY = Math.max(0, ...values);
+    const yRange = (maxY - minY) || 1;
     const toX = (i) => pad.left + (i / Math.max(points.length - 1, 1)) * plotW;
-    const toY = (v) => pad.top + (1 - ((signedLog(v) - minY) / yRange)) * plotH;
+    const toY = (v) => pad.top + (1 - ((v - minY) / yRange)) * plotH;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#0f1d2e';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    const drawPoint = (i) => ({ x: toX(i), y: toY(points[i].total) });
+    const first = drawPoint(0);
     ctx.beginPath();
-    points.forEach((p, i) => {
-      const x = toX(i);
-      const y = toY(p.total);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
+    ctx.moveTo(first.x, first.y);
+    for (let i = 1; i < points.length; i += 1) {
+      const prev = drawPoint(i - 1);
+      const curr = drawPoint(i);
+      const midX = (prev.x + curr.x) / 2;
+      ctx.quadraticCurveTo(prev.x, prev.y, midX, (prev.y + curr.y) / 2);
+      if (i === points.length - 1) ctx.quadraticCurveTo(curr.x, curr.y, curr.x, curr.y);
+    }
     const stroke = points[points.length - 1].total >= 0 ? '#00e540' : '#ea5a5a';
     ctx.strokeStyle = stroke;
     ctx.lineWidth = 3;
     ctx.stroke();
 
-    ctx.lineTo(toX(points.length - 1), toY(rawMin));
-    ctx.lineTo(toX(0), toY(rawMin));
+    const baseline = toY(0);
+    ctx.lineTo(toX(points.length - 1), baseline);
+    ctx.lineTo(toX(0), baseline)
     ctx.closePath();
     ctx.fillStyle = points[points.length - 1].total >= 0 ? 'rgba(0, 229, 64, 0.2)' : 'rgba(234, 90, 90, 0.2)';
     ctx.fill();
@@ -196,7 +191,7 @@
       const idx = Math.max(0, Math.min(points.length - 1, Math.round((relX / plotW) * (points.length - 1))));
       const point = points[idx];
       tooltip.textContent = idx === 0
-        ? 'Start: ₨0'
+        ? 'Start: Rs 0'
         : `Trade ${idx}: Total Profit ${currency(point.total)}`;
       tooltip.style.display = 'block';
       tooltip.style.left = `${e.pageX + 10}px`;
@@ -252,6 +247,10 @@
 
     pie.addEventListener('mousemove', (e) => {
       const rect = pie.getBoundingClientRect();
+      const relX = (e.clientX - rect.left) / rect.width;
+      const relY = (e.clientY - rect.top) / rect.height;
+      pie.style.setProperty('--tilt-x', `${(relY - 0.5) * -8}deg`);
+      pie.style.setProperty('--tilt-y', `${(relX - 0.5) * 8}deg`);
       const cx = rect.left + rect.width / 2;
       const cy = rect.top + rect.height / 2;
       const angle = (Math.atan2(e.clientY - cy, e.clientX - cx) * 180) / Math.PI;
@@ -266,12 +265,14 @@
     });
 
     pie.addEventListener('mouseleave', () => {
+      pie.style.setProperty('--tilt-x', '0deg');
+      pie.style.setProperty('--tilt-y', '0deg');
       tooltip.style.display = 'none';
     });
   }
 
   function currency(value) {
-    return `₨${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(value)}`;
+    return `Rs ${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(value)}`;
   }
 
   const ready = window.__pmsDataReady;
