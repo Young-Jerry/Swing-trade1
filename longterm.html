@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Long Term | Portfolio Management System</title>
+  <title>SIP System | Portfolio Management System</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -13,8 +13,8 @@
       <ul class="nav-links">
         <li><a href="index.html">Dashboard</a></li>
         <li><a href="trades.html">Trades</a></li>
-        <li><a class="active" href="longterm.html">Long Term</a></li>
-        <li><a href="mf.html">SIP System</a></li>
+        <li><a href="longterm.html">Long Term</a></li>
+        <li><a class="active" href="mf.html">SIP System</a></li>
         <li><a href="pasttrades.html">Past Trades</a></li>
         <li><a href="journal.html">Journal</a></li>
         <li><a href="share_calculator.html">Share Calculator</a></li>
@@ -22,45 +22,58 @@
     </nav>
   </header>
 
-  <main class="container" data-portfolio-key="longterm" data-portfolio-title="Long Term Holdings" data-show-ranges="false">
-    <h1>Long Term Holdings</h1>
-    <p class="subtitle">Sell range is intentionally removed for long-term investments.</p>
-
-    <section class="card section">
-      <div class="summary-grid">
-        <div class="summary-item">Total Invested: <strong id="totalInvested">₨0</strong></div>
-        <div class="summary-item">Total Current Value: <strong id="totalCurrent">₨0</strong></div>
-        <div class="summary-item">Total P/L: <strong id="totalPL">₨0</strong></div>
-      </div>
-    </section>
+  <main class="container">
+    <h1>SIP System</h1>
+    <p class="subtitle">Installment based SIPs with cleaner history controls.</p>
 
     <section class="card section">
       <div class="toolbar">
-        <h3>Add Entry</h3>
-        <div class="save-indicator" id="saveIndicator">Saved ✓</div>
+        <div class="summary-grid">
+          <div class="summary-item">Total Units: <strong id="sipTotalUnits">0</strong></div>
+          <div class="summary-item" id="sipCurrentNavItem">Current NAV: <strong id="sipCurrentNav">₨0</strong></div>
+          <div class="summary-item">Total Value: <strong id="sipTotalValue">₨0</strong></div>
+        </div>
+        <div class="save-indicator" id="sipMessage">Saved ✓</div>
       </div>
-      <form id="addForm" class="form-grid" autocomplete="off">
-        <label>Script<input data-next type="text" name="script" required /></label>
-        <label>Sector<input data-next type="text" name="sector" required /></label>
-        <label>Qty<input data-next type="number" name="qty" min="0" step="1" required /></label>
-        <label>LTP<input data-next type="number" name="ltp" min="0" step="0.01" required /></label>
-        <label>WACC<input data-next type="number" name="wacc" min="0" step="0.01" required /></label>
-        <button class="btn-primary" type="submit">Add Holding</button>
+      <div class="sip-tabs" id="sipTabs"></div>
+    </section>
+
+    <section class="card section">
+      <h3>Change NAV</h3>
+      <form id="navForm" class="form-grid" autocomplete="off">
+        <label>SIP<select name="sipName" required></select></label>
+        <label>New NAV<input name="nav" type="number" min="0.01" step="0.0001" required /></label>
+        <button class="btn-secondary" type="submit">Update NAV</button>
+      </form>
+    </section>
+    <section class="card section">
+      <h3>Installment</h3>
+      <form id="installmentForm" class="form-grid" autocomplete="off">
+        <label>SIP<select name="sipName" required></select></label>
+        <label>Date
+          <input name="date" type="date" required />
+        </label>
+        <label>QTY<input name="units" type="number" min="1" step="1" required /></label>
+        <label>NAV<input name="nav" type="number" min="0.01" step="0.0001" required /></label>
+        <button class="btn-primary" type="submit">Add Installment</button>
       </form>
     </section>
 
     <section class="card section">
+      <div class="toolbar">
+        <h3>SIP History</h3>
+        <label>SIP Filter
+          <select id="historySipSelect"></select>
+        </label>
+      </div>
       <div class="table-wrap">
-        <table id="portfolioTable" class="portfolio-table">
-          <thead>
+        <table id="sipTable">
+          <thead id="sipTableHead">
             <tr>
-              <th data-sort="script">Script</th>
-              <th data-sort="sector">Sector</th>
-              <th data-sort="qty">Qty</th>
-              <th data-sort="ltp">LTP</th>
-              <th data-sort="current">Current Value</th>
-              <th data-sort="pl">Total P/L</th>
-              <th data-sort="actions">Actions</th>
+              <th>SIP</th>
+              <th>Units</th>
+              <th>D.A</th>
+              <th>Total Investment</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -69,6 +82,22 @@
     </section>
   </main>
 
+  <script type="module" src="firebase-sync.js"></script>
+  <script src="data-recorder.js"></script>
+  <script src="mf.js"></script>
+  <section class="card section">
+      <h3>Add Manual SIP</h3>
+      <form id="manualSipForm" class="form-grid" autocomplete="off">
+        <label>New SIP Name
+          <input name="newSipName" type="text" placeholder="Example: NABIL" required />
+        </label>
+        <button class="btn-primary" type="submit">Add Manual SIP</button>
+        <button class="btn-danger" type="button" id="deleteSipBtn">Delete Selected SIP</button>
+      </form>
+    </section>
+  
+  <script src="trade-math.js"></script>
+  <script src="capital-manager.js"></script>
   <script type="module" src="firebase-sync.js"></script>
   <script src="data-recorder.js"></script>
   <script src="portfolio.js"></script>
