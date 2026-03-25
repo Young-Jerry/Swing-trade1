@@ -44,7 +44,6 @@
       wacc: num(fd.get('wacc')),
       sell1: showRanges ? num(fd.get('sell1')) : 0,
       sell2: showRanges ? num(fd.get('sell1')) * 1.1 : 0,
-      ltpChangePct: 0,
     };
 
     const baseFields = [record.ltp, record.qty, record.wacc];
@@ -67,7 +66,6 @@
       wacc: num(r.wacc) || 0,
       sell1: num(r.sell1) || 0,
       sell2: num(r.sell2) || ((num(r.sell1) || 0) * 1.1),
-      ltpChangePct: Number.isFinite(Number(r.ltpChangePct)) ? Number(r.ltpChangePct) : 0,
     }));
   }
 
@@ -146,16 +144,10 @@
       const value = num(input.value);
       if (!Number.isFinite(value)) return;
       row.ltp = value;
-      row.ltpChangePct = row.wacc > 0 ? ((row.ltp - row.wacc) / row.wacc) * 100 : 0;
       persist();
     });
 
-    const pct = document.createElement('small');
-    const sign = row.ltpChangePct >= 0 ? '+' : '';
-    pct.textContent = `(${sign}${(row.ltpChangePct || 0).toFixed(2)}%)`;
-    pct.className = row.ltpChangePct >= 0 ? 'value-profit' : 'value-loss';
-
-    wrap.append(input, pct);
+    wrap.append(input);
     td.appendChild(wrap);
     return td;
   }
@@ -168,14 +160,14 @@
     const low = document.createElement('input');
     low.type = 'number';
     low.className = 'inline-edit range-input';
-    low.value = fmt(row.sell1);
+    low.value = fmt2(row.sell1);
     low.step = '0.01';
     low.min = '0';
 
     const high = document.createElement('input');
     high.type = 'number';
     high.className = 'inline-edit range-input';
-    high.value = fmt(row.sell2 || (row.sell1 * 1.1));
+    high.value = fmt2(row.sell2 || (row.sell1 * 1.1));
     high.step = '0.01';
     high.min = '0';
     high.readOnly = true;
@@ -185,7 +177,7 @@
       if (!Number.isFinite(value)) return;
       row.sell1 = value;
       row.sell2 = value * 1.1;
-      high.value = fmt(row.sell2);
+      high.value = fmt2(row.sell2);
       persist();
     });
 
@@ -276,6 +268,10 @@
 
   function fmt(v) {
     return Number.isFinite(v) ? String(v) : '0';
+  }
+
+  function fmt2(v) {
+    return Number.isFinite(v) ? Number(v).toFixed(2) : '0.00';
   }
 
   function clean(v) {
