@@ -1,447 +1,198 @@
-(() => {
-  let booted = false;
+import { saveData, subscribeData } from './firebase-db.js';
 
-  const boot = () => {
-    if (booted) return;
-    booted = true;
-    const SIP_STATE_KEY = 'sipStateV4';
-    const LEGACY_KEYS = ['sipStateV3', 'sipStateV2', 'sipData'];
-    const defaultSips = ['SSIS', 'KSLY'];
-    const forcedStartMonth = {
-      SSIS: '2025-07',
-      KSLY: '2026-02',
-    };
+const defaultSips = ['SSIS', 'KSLY'];
+const tabs = document.getElementById('sipTabs');
+const manualSipForm = document.getElementById('manualSipForm');
+const installmentForm = document.getElementById('installmentForm');
+const navForm = document.getElementById('navForm');
+const deleteSipBtn = document.getElementById('deleteSipBtn');
+const historySipSelect = document.getElementById('historySipSelect');
+const tbody = document.querySelector('#sipTable tbody');
+const tableHead = document.getElementById('sipTableHead');
+const msg = document.getElementById('sipMessage');
+const currentNavItem = document.getElementById('sipCurrentNavItem');
 
-    const tabs = document.getElementById('sipTabs');
-    const manualSipForm = document.getElementById('manualSipForm');
-    const installmentForm = document.getElementById('installmentForm');
-    const navForm = document.getElementById('navForm');
-    const deleteSipBtn = document.getElementById('deleteSipBtn');
-    const historySipSelect = document.getElementById('historySipSelect');
-    const tbody = document.querySelector('#sipTable tbody');
-    const tableHead = document.getElementById('sipTableHead');
-    const msg = document.getElementById('sipMessage');
-    const currentNavItem = document.getElementById('sipCurrentNavItem');
+let state = { sips: [...defaultSips], records: { SSIS: [], KSLY: [] }, currentNav: { SSIS: 0, KSLY: 0 }, activeSip: 'ALL_SIP' };
+let activeSip = 'ALL_SIP';
+let historySip = 'ALL';
 
-    if (!tabs || !manualSipForm || !installmentForm || !navForm) return;
+subscribeData('mutualFunds', (data) => {
+  const merged = normalizeState(data || state);
+  state = merged;
+  activeSip = state.activeSip && (state.activeSip === 'ALL_SIP' || state.sips.includes(state.activeSip)) ? state.activeSip : 'ALL_SIP';
+  render();
+});
 
-    let state = readState();
-    let activeSip = state.activeSip && (state.activeSip === 'ALL_SIP' || state.sips.includes(state.activeSip))
-      ? state.activeSip
-      : 'ALL_SIP';
-    let historySip = 'ALL';
+bindEvents();
 
-    bindEvents();
-    render();
+function bindEvents() {
+  manualSipForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = clean(manualSipForm.elements.newSipName.value).toUpperCase();
+    if (!name) return show('Enter a SIP name.');
+    if (state.sips.includes(name)) return show('SIP already exists.');
+    state.sips.push(name);
+    state.records[name] = [];
+    state.currentNav[name] = 0;
+    activeSip = name;
+    manualSipForm.reset();
+    await persist('Manual SIP added.');
+  });
 
-    function bindEvents() {
-      manualSipForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const name = clean(manualSipForm.elements.newSipName.value).toUpperCase();
-        if (!name) return show('Enter a SIP name.');
-        if (state.sips.includes(name)) return show('SIP already exists.');
-        state.sips.push(name);
-        state.records[name] = state.records[name] || [];
-        state.currentNav[name] = state.currentNav[name] || 0;
-        state.registeredAt[name] = month15(todayMonth());
-        activeSip = name;
-        manualSipForm.reset();
-        persist('Manual SIP added.');
-      });
+  deleteSipBtn.addEventListener('click', async () => {
+    if (!activeSip || activeSip === 'ALL_SIP') return show('Select a SIP to delete.');
+    if (defaultSips.includes(activeSip)) return show('Default SIP cannot be deleted.');
+    state.sips = state.sips.filter((s) => s !== activeSip);
+    delete state.records[activeSip];
+    delete state.currentNav[activeSip];
+    activeSip = 'ALL_SIP';
+    historySip = 'ALL';
+    await persist('SIP deleted.');
+  });
 
-      deleteSipBtn.addEventListener('click', () => {
-        if (!activeSip || activeSip === 'ALL_SIP') return show('Select a SIP to delete.');
-        if (defaultSips.includes(activeSip)) return show('Default SIP cannot be deleted.');
-        state.sips = state.sips.filter((s) => s !== activeSip);
-        delete state.records[activeSip];
-        delete state.currentNav[activeSip];
-        delete state.registeredAt[activeSip];
-        activeSip = 'ALL_SIP';
-        historySip = 'ALL';
-        persist('SIP deleted.');
-      });
+  installmentForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(installmentForm);
+    const sipName = String(fd.get('sipName'));
+    const month = String(fd.get('month'));
+    const units = Math.floor(num(fd.get('units')));
+    const nav = num(fd.get('nav'));
+    if (!sipName || !month || !Number.isFinite(units) || !Number.isFinite(nav) || units <= 0 || nav <= 0) return show('Invalid data.');
+    state.records[sipName] = state.records[sipName] || [];
+    state.records[sipName].push({ id: crypto.randomUUID(), date: `${month}-15`, units, nav, amount: units * nav });
+    state.records[sipName].sort((a, b) => a.date.localeCompare(b.date));
+    installmentForm.reset();
+    await persist('Installment added.');
+  });
 
-      installmentForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const fd = new FormData(installmentForm);
-        const sipName = String(fd.get('sipName'));
-        const month = String(fd.get('month'));
-        const units = Math.floor(num(fd.get('units')));
-        const nav = num(fd.get('nav'));
-        if (!sipName || !isValidMonth(month)) return show('Select a valid month.');
-        if (!Number.isFinite(units) || !Number.isFinite(nav) || units <= 0 || nav <= 0) return show('Invalid QTY/NAV.');
-        if (!isMonthAllowed(sipName, month)) return show(`Month must be on/after ${minimumMonthForSip(sipName)}.`);
-        if (monthExists(sipName, month)) return show('This SIP already has an installment in that month. Delete it from SIP History to reuse the month.');
+  navForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(navForm);
+    const sipName = String(fd.get('sipName'));
+    const nav = num(fd.get('nav'));
+    if (!Number.isFinite(nav) || nav <= 0) return;
+    state.currentNav[sipName] = nav;
+    await persist('NAV updated.');
+  });
 
-        addEntry(sipName, {
-          id: crypto.randomUUID(),
-          date: month15(month),
-          units,
-          nav,
-        });
+  historySipSelect.addEventListener('change', () => { historySip = historySipSelect.value; renderHistory(); });
+}
 
-        installmentForm.reset();
-        persist('Installment added.');
-      });
+function render() {
+  tabs.innerHTML = '';
+  tabs.appendChild(tabButton('ALL_SIP', 'All SIP'));
+  state.sips.forEach((name) => tabs.appendChild(tabButton(name, name)));
+  fillSipSelects();
 
-      navForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const fd = new FormData(navForm);
-        const sipName = String(fd.get('sipName'));
-        const nav = num(fd.get('nav'));
-        if (!Number.isFinite(nav) || nav <= 0) return;
-        state.currentNav[sipName] = nav;
-        persist('NAV updated.');
-      });
+  const sipNames = activeSip === 'ALL_SIP' ? state.sips : [activeSip];
+  const totalUnits = sipNames.reduce((sum, sip) => sum + (state.records[sip] || []).reduce((s, row) => s + row.units, 0), 0);
+  const totalValue = sipNames.reduce((sum, sip) => {
+    const nav = state.currentNav[sip] || latestNav(sip);
+    const units = (state.records[sip] || []).reduce((s, row) => s + row.units, 0);
+    return sum + units * nav;
+  }, 0);
 
-      historySipSelect.addEventListener('change', () => {
-        historySip = historySipSelect.value;
-        renderHistory();
-      });
+  document.getElementById('sipTotalUnits').textContent = fmtUnits(totalUnits);
+  document.getElementById('sipTotalValue').textContent = currency(totalValue);
 
-      installmentForm.elements.sipName.addEventListener('change', syncInstallmentMinMonth);
-      installmentForm.elements.month.addEventListener('change', syncInstallmentDateDisplay);
-    }
-
-    function render() {
-      tabs.innerHTML = '';
-
-      const allBtn = tabButton('ALL_SIP', 'All SIP');
-      tabs.appendChild(allBtn);
-      state.sips.forEach((name) => tabs.appendChild(tabButton(name, name)));
-
-      fillSipSelects();
-
-      const sipNames = activeSip === 'ALL_SIP' ? state.sips : [activeSip];
-      const totalUnits = sipNames.reduce((sum, sip) => sum + (state.records[sip] || []).reduce((s, row) => s + row.units, 0), 0);
-      const totalValue = sipNames.reduce((sum, sip) => {
-        const nav = state.currentNav[sip] || latestNav(sip);
-        const units = (state.records[sip] || []).reduce((s, row) => s + row.units, 0);
-        return sum + units * nav;
-      }, 0);
-
-      document.getElementById('sipTotalUnits').textContent = fmtUnits(totalUnits);
-      document.getElementById('sipTotalValue').textContent = currency(totalValue);
-
-      if (activeSip === 'ALL_SIP') {
-        currentNavItem.classList.add('hidden');
-        document.getElementById('sipCurrentNav').textContent = '—';
-      } else {
-        currentNavItem.classList.remove('hidden');
-        document.getElementById('sipCurrentNav').textContent = currency(state.currentNav[activeSip] || latestNav(activeSip));
-      }
-
-      state.activeSip = activeSip;
-      renderHistory();
-    }
-
-    function tabButton(value, label) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = `btn-secondary ${value === activeSip ? 'active' : ''}`;
-      btn.textContent = label;
-      btn.onclick = () => {
-        activeSip = value;
-        persist('Saved ✓');
-      };
-      return btn;
-    }
-
-    function fillSipSelects() {
-      const selects = [...document.querySelectorAll('form select[name="sipName"]')];
-      selects.forEach((select) => {
-        select.innerHTML = state.sips.map((name) => `<option value="${name}">${name}</option>`).join('');
-        select.value = activeSip === 'ALL_SIP' ? (state.sips[0] || '') : activeSip;
-        select.onchange = () => {
-          activeSip = select.value;
-          render();
-        };
-      });
-
-      historySipSelect.innerHTML = ['<option value="ALL">All SIPs</option>']
-        .concat(state.sips.map((name) => `<option value="${name}">${name}</option>`))
-        .join('');
-      historySipSelect.value = historySip;
-
-      syncInstallmentMinMonth();
-      syncInstallmentDateDisplay();
-    }
-
-    function renderHistory() {
-      const rows = historyRows();
-
-      tbody.innerHTML = '';
-      rows.forEach((row) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          ${historySip === 'ALL' ? '' : `<td>${row.date}</td>`}
-          <td>${row.sipName}</td>
-          <td>${fmtUnits(row.units)}</td>
-          <td>${fmtNav(row.nav)}</td>
-          <td>${currency(row.amount)}</td>
-          <td>${historySip === 'ALL'
-            ? `<button class="btn-secondary" data-action="viewSip" data-sip="${row.sipName}">View</button>`
-            : `<button class="btn-danger" data-action="deleteRow" data-sip="${row.sipName}" data-id="${row.id}">Delete</button>`}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      tbody.querySelectorAll('button[data-action="viewSip"]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          historySip = btn.dataset.sip;
-          historySipSelect.value = historySip;
-          renderHistory();
-        });
-      });
-
-      tbody.querySelectorAll('button[data-action="deleteRow"]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const sip = btn.dataset.sip;
-          const id = btn.dataset.id;
-          state.records[sip] = (state.records[sip] || []).filter((row) => row.id !== id);
-          persist('SIP history row deleted.');
-        });
-      });
-
-      if (!rows.length) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="${historySip === 'ALL' ? 5 : 6}">No SIP history found for this selection.</td>`;
-        tbody.appendChild(tr);
-      }
-    }
-
-    function historyRows() {
-      if (historySip === 'ALL') {
-        const merged = new Map();
-        state.sips.forEach((sipName) => {
-          (state.records[sipName] || []).forEach((row) => {
-            const prev = merged.get(sipName) || { id: row.id, sipName, units: 0, amount: 0, date: 'Total' };
-            prev.units += Number(row.units || 0);
-            prev.amount += Number(row.amount || (Number(row.units || 0) * Number(row.nav || 0)));
-            merged.set(sipName, prev);
-          });
-        });
-        tableHead.innerHTML = `
-          <tr>
-            <th>SIP</th>
-            <th>Units</th>
-            <th>NAV</th>
-            <th>Amount</th>
-            <th>Action</th>
-          </tr>
-        `;
-        return Array.from(merged.values())
-          .map((r) => ({ ...r, nav: r.units > 0 ? r.amount / r.units : 0 }))
-          .sort((a, b) => a.sipName.localeCompare(b.sipName));
-      }
-
-      const sipNames = [historySip];
-      const merged = [];
-      sipNames.forEach((sipName) => {
-        (state.records[sipName] || []).forEach((row) => {
-          merged.push({
-            id: row.id,
-            date: row.date,
-            sipName,
-            units: Number(row.units || 0),
-            amount: Number(row.amount || (Number(row.units || 0) * Number(row.nav || 0))),
-            nav: Number(row.nav || 0),
-          });
-        });
-      });
-      tableHead.innerHTML = `
-        <tr>
-          <th>Date</th>
-          <th>SIP</th>
-          <th>Units</th>
-          <th>NAV</th>
-          <th>Amount</th>
-          <th>Action</th>
-        </tr>
-      `;
-      return merged.sort((a, b) => a.date.localeCompare(b.date));
-    }
-
-    function syncInstallmentMinMonth() {
-      const sip = installmentForm.elements.sipName.value;
-      const monthInput = installmentForm.elements.month;
-      const minMonth = minimumMonthForSip(sip);
-      monthInput.min = minMonth;
-      if (!monthInput.value || monthInput.value < minMonth) {
-        monthInput.value = minMonth;
-      }
-      if (monthExists(sip, monthInput.value)) {
-        monthInput.value = nextFreeMonth(sip, monthInput.value);
-      }
-      syncInstallmentDateDisplay();
-    }
-
-    function syncInstallmentDateDisplay() {
-      const month = installmentForm.elements.month.value || minimumMonthForSip(installmentForm.elements.sipName.value);
-      installmentForm.elements.date.value = `${month}-15`;
-    }
-
-    function minimumMonthForSip(sipName) {
-      if (forcedStartMonth[sipName]) return forcedStartMonth[sipName];
-      const reg = String(state.registeredAt[sipName] || today()).slice(0, 7);
-      return isValidMonth(reg) ? reg : todayMonth();
-    }
-
-    function isMonthAllowed(sipName, month) {
-      const minMonth = minimumMonthForSip(sipName);
-      return month >= minMonth;
-    }
-
-    function isValidMonth(value) {
-      return /^\d{4}-\d{2}$/.test(value);
-    }
-
-    function month15(month) {
-      return `${month}-15`;
-    }
-
-    function addEntry(sipName, record) {
-      state.records[sipName] = state.records[sipName] || [];
-      const sanitized = {
-        id: record.id,
-        date: String(record.date),
-        units: Math.floor(Number(record.units || 0)),
-        nav: Number(record.nav || 0),
-      };
-      sanitized.amount = sanitized.units * sanitized.nav;
-
-      state.records[sipName].push(sanitized);
-      state.records[sipName].sort((a, b) => a.date.localeCompare(b.date));
-
-      state.currentNav[sipName] = sanitized.nav;
-      activeSip = sipName;
-    }
-
-    function monthExists(sipName, month) {
-      const date = month15(month);
-      return (state.records[sipName] || []).some((row) => row.date === date);
-    }
-
-    function nextFreeMonth(sipName, fromMonth) {
-      const base = `${fromMonth}-01T00:00:00Z`;
-      const cursor = new Date(base);
-      for (let i = 0; i < 120; i += 1) {
-        const month = cursor.toISOString().slice(0, 7);
-        if (!monthExists(sipName, month) && month >= minimumMonthForSip(sipName)) return month;
-        cursor.setUTCMonth(cursor.getUTCMonth() + 1);
-      }
-      return fromMonth;
-    }
-
-    function latestNav(sipName) {
-      const rows = state.records[sipName] || [];
-      if (!rows.length) return 0;
-      return rows[rows.length - 1].nav || 0;
-    }
-
-    function readState() {
-      const existing = JSON.parse(localStorage.getItem(SIP_STATE_KEY) || 'null');
-      if (existing && Array.isArray(existing.sips)) return normalizeState(existing);
-
-      for (const key of LEGACY_KEYS) {
-        const legacy = JSON.parse(localStorage.getItem(key) || 'null');
-        if (!legacy) continue;
-        if ((key === 'sipStateV3' || key === 'sipStateV2') && Array.isArray(legacy.sips)) {
-          return normalizeState(legacy);
-        }
-
-        if (key === 'sipData' && Array.isArray(legacy)) {
-          return normalizeState({
-            sips: [...defaultSips],
-            records: { SSIS: legacy, KSLY: [] },
-            currentNav: {},
-          });
-        }
-      }
-
-      return normalizeState({ sips: [...defaultSips], records: { SSIS: [], KSLY: [] }, currentNav: {} });
-    }
-
-    function normalizeState(input) {
-      const sips = Array.from(new Set([...(input.sips || []), ...defaultSips]));
-      const records = {};
-      const currentNav = { ...(input.currentNav || {}) };
-      const registeredAt = { ...(input.registeredAt || {}) };
-
-      sips.forEach((sip) => {
-        records[sip] = Array.isArray((input.records || {})[sip])
-          ? input.records[sip].map((r) => ({
-            id: r.id || crypto.randomUUID(),
-            date: String(r.date || month15(todayMonth())),
-            units: Math.floor(Number(r.units || (Number(r.amount || 0) / Number(r.nav || 1)))),
-            nav: Number(r.nav || 0),
-            amount: Math.floor(Number(r.units || (Number(r.amount || 0) / Number(r.nav || 1)))) * Number(r.nav || 0),
-          }))
-          : [];
-        records[sip].sort((a, b) => a.date.localeCompare(b.date));
-
-        if (!registeredAt[sip]) {
-          const firstDate = records[sip][0]?.date || month15(todayMonth());
-          registeredAt[sip] = firstDate;
-        }
-        if (!Number.isFinite(currentNav[sip])) {
-          currentNav[sip] = records[sip].length ? records[sip][records[sip].length - 1].nav : 0;
-        }
-      });
-
-      return {
-        sips,
-        records,
-        currentNav,
-        registeredAt,
-        activeSip: input.activeSip || 'ALL_SIP',
-      };
-    }
-
-    function persist(message = 'Saved ✓') {
-      localStorage.setItem(SIP_STATE_KEY, JSON.stringify(state));
-      show(message);
-      render();
-    }
-
-    function show(text) {
-      msg.textContent = text;
-    }
-
-    function clean(value) {
-      return String(value || '').trim();
-    }
-
-    function num(value) {
-      return Number.parseFloat(value);
-    }
-
-    function todayMonth() {
-      return new Date().toISOString().slice(0, 7);
-    }
-
-    function today() {
-      return new Date().toISOString().slice(0, 10);
-    }
-
-    function fmtUnits(value) {
-      return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Math.floor(value || 0));
-    }
-
-    function fmtNav(value) {
-      return new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value || 0);
-    }
-
-    function currency(value) {
-      return `₨${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(value || 0)}`;
-    }
-  };
-
-  const ready = window.__pmsDataReady;
-  if (ready && typeof ready.then === 'function') {
-    ready.finally(boot);
+  if (activeSip === 'ALL_SIP') {
+    currentNavItem.classList.add('hidden');
+    document.getElementById('sipCurrentNav').textContent = '—';
   } else {
-    window.addEventListener('pms-data-ready', boot, { once: true });
-    setTimeout(boot, 1200);
+    currentNavItem.classList.remove('hidden');
+    document.getElementById('sipCurrentNav').textContent = currency(state.currentNav[activeSip] || latestNav(activeSip));
   }
-})();
+
+  state.activeSip = activeSip;
+  renderHistory();
+}
+
+function renderHistory() {
+  const rows = historyRows();
+  tbody.innerHTML = '';
+  rows.forEach((row) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      ${historySip === 'ALL' ? '' : `<td>${row.date}</td>`}
+      <td>${row.sipName}</td>
+      <td>${fmtUnits(row.units)}</td>
+      <td>${fmtNav(row.nav)}</td>
+      <td>${currency(row.amount)}</td>
+      <td>${historySip === 'ALL' ? `<button class="btn-secondary" data-action="viewSip" data-sip="${row.sipName}">View</button>` : `<button class="btn-danger" data-action="deleteRow" data-sip="${row.sipName}" data-id="${row.id}">Delete</button>`}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll('button[data-action="viewSip"]').forEach((btn) => btn.addEventListener('click', () => { historySip = btn.dataset.sip; historySipSelect.value = historySip; renderHistory(); }));
+  tbody.querySelectorAll('button[data-action="deleteRow"]').forEach((btn) => btn.addEventListener('click', async () => {
+    const sip = btn.dataset.sip; const id = btn.dataset.id;
+    state.records[sip] = (state.records[sip] || []).filter((row) => row.id !== id);
+    await persist('SIP history row deleted.');
+  }));
+
+  if (!rows.length) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="${historySip === 'ALL' ? 5 : 6}">No SIP history found for this selection.</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+function historyRows() {
+  if (historySip === 'ALL') {
+    tableHead.innerHTML = '<tr><th>SIP</th><th>Units</th><th>NAV</th><th>Amount</th><th>Action</th></tr>';
+    return state.sips.map((sipName) => {
+      const rows = state.records[sipName] || [];
+      const units = rows.reduce((s, r) => s + Number(r.units || 0), 0);
+      const amount = rows.reduce((s, r) => s + Number(r.amount || (r.units * r.nav)), 0);
+      return { id: sipName, sipName, units, amount, nav: units ? amount / units : 0 };
+    }).filter((r) => r.units > 0 || r.amount > 0);
+  }
+
+  tableHead.innerHTML = '<tr><th>Date</th><th>SIP</th><th>Units</th><th>NAV</th><th>Amount</th><th>Action</th></tr>';
+  return (state.records[historySip] || []).map((row) => ({ ...row, sipName: historySip, amount: Number(row.amount || row.units * row.nav) }));
+}
+
+function tabButton(value, label) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = `btn-secondary ${value === activeSip ? 'active' : ''}`;
+  btn.textContent = label;
+  btn.onclick = async () => { activeSip = value; await persist('Saved ✓'); };
+  return btn;
+}
+
+function fillSipSelects() {
+  const selects = [...document.querySelectorAll('form select[name="sipName"]')];
+  selects.forEach((select) => {
+    select.innerHTML = state.sips.map((name) => `<option value="${name}">${name}</option>`).join('');
+    select.value = activeSip === 'ALL_SIP' ? (state.sips[0] || '') : activeSip;
+    select.onchange = () => { activeSip = select.value; render(); };
+  });
+  historySipSelect.innerHTML = ['<option value="ALL">All SIPs</option>'].concat(state.sips.map((name) => `<option value="${name}">${name}</option>`)).join('');
+  historySipSelect.value = historySip;
+}
+
+function normalizeState(input) {
+  const sips = Array.from(new Set([...(input.sips || []), ...defaultSips]));
+  const records = {};
+  const currentNav = {};
+  sips.forEach((sip) => {
+    records[sip] = Array.isArray((input.records || {})[sip]) ? (input.records[sip]) : [];
+    currentNav[sip] = Number((input.currentNav || {})[sip] || 0);
+  });
+  return { sips, records, currentNav, activeSip: input.activeSip || 'ALL_SIP' };
+}
+
+async function persist(message = 'Saved ✓') {
+  state = normalizeState(state);
+  state.activeSip = activeSip;
+  await saveData('mutualFunds', state);
+  show(message);
+}
+
+function latestNav(sip) { const rows = state.records[sip] || []; return rows.length ? Number(rows[rows.length - 1].nav || 0) : 0; }
+function show(text) { msg.textContent = text; }
+function clean(v) { return String(v || '').trim(); }
+function num(v) { return Number.parseFloat(v); }
+function currency(value) { return `₨${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(Number(value || 0))}`; }
+function fmtUnits(value) { return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(Number(value || 0)); }
+function fmtNav(value) { return Number(value || 0).toFixed(4); }
