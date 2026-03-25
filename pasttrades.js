@@ -1,17 +1,19 @@
 (function () {
   const TRADES_KEY = 'trades';
   const LONGTERM_KEY = 'longterm';
-  const SIP_STATE_KEY = 'sipStateV3';
+  const SIP_STATE_KEY = 'sipStateV4';
+  const SIP_STATE_V3_KEY = 'sipStateV3';
   const SIP_STATE_OLD_KEY = 'sipStateV2';
   const EXITED_KEY = 'exitedTradesV2';
 
   const exitForm = document.getElementById('exitForm');
   const exitType = document.getElementById('exitType');
   const exitRecord = document.getElementById('exitRecord');
+  const soldPriceInput = document.getElementById('soldPrice');
   const holdingDaysInput = document.getElementById('holdingDays');
   const exitedBody = document.querySelector('#exitedTable tbody');
 
-  if (!exitForm || !exitType || !exitRecord || !exitedBody) return;
+  if (!exitForm || !exitType || !exitRecord || !soldPriceInput || !exitedBody) return;
 
   bindEvents();
   renderRecordOptions();
@@ -24,14 +26,15 @@
       e.preventDefault();
       const type = exitType.value;
       const recordId = exitRecord.value;
+      const soldPrice = Number(soldPriceInput.value);
       const holdingDays = Math.floor(Number(holdingDaysInput.value));
-      if (!recordId || !Number.isFinite(holdingDays) || holdingDays < 0) return;
+      if (!recordId || !Number.isFinite(soldPrice) || soldPrice <= 0 || !Number.isFinite(holdingDays) || holdingDays < 0) return;
 
       const active = getActiveRecords(type);
       const record = active.find((item) => item.id === recordId);
       if (!record) return;
 
-      const profit = (record.currentPrice - record.buyPrice) * record.qty;
+      const profit = (soldPrice - record.buyPrice) * record.qty;
       const perDayProfit = holdingDays > 0 ? profit / holdingDays : profit;
 
       const exited = readJson(EXITED_KEY);
@@ -41,7 +44,7 @@
         name: record.name,
         qty: record.qty,
         buyPrice: record.buyPrice,
-        currentPrice: record.currentPrice,
+        soldPrice,
         profit,
         perDayProfit,
         holdingDays,
@@ -49,6 +52,7 @@
 
       localStorage.setItem(EXITED_KEY, JSON.stringify(exited));
       removeRecord(record);
+      soldPriceInput.value = '';
       holdingDaysInput.value = '';
       renderRecordOptions();
       renderExited();
@@ -77,6 +81,8 @@
       tr.innerHTML = `
         <td>${row.type}</td>
         <td>${escapeHtml(row.name)}</td>
+        <td>${currency(row.buyPrice)}</td>
+        <td>${currency(row.soldPrice || row.currentPrice || 0)}</td>
         <td class="${profitClass(row.profit)}">${currency(row.profit)}</td>
         <td class="${profitClass(row.perDayProfit)}">${currency(row.perDayProfit)}</td>
         <td>${Math.floor(Number(row.holdingDays || 0))}</td>
@@ -98,7 +104,7 @@
 
     if (!exited.length) {
       const tr = document.createElement('tr');
-      tr.innerHTML = '<td colspan="6">No exited trades yet.</td>';
+      tr.innerHTML = '<td colspan="8">No exited trades yet.</td>';
       exitedBody.appendChild(tr);
     }
   }
@@ -148,7 +154,7 @@
         ref: 'longterm',
       })),
       sip: () => {
-        const sipState = JSON.parse(localStorage.getItem(SIP_STATE_KEY) || localStorage.getItem(SIP_STATE_OLD_KEY) || '{}');
+        const sipState = JSON.parse(localStorage.getItem(SIP_STATE_KEY) || localStorage.getItem(SIP_STATE_V3_KEY) || localStorage.getItem(SIP_STATE_OLD_KEY) || '{}');
         const rows = [];
         Object.entries(sipState.records || {}).forEach(([sipName, records]) => {
           records.forEach((row) => {
@@ -180,7 +186,9 @@
       return;
     }
 
-    const key = localStorage.getItem(SIP_STATE_KEY) ? SIP_STATE_KEY : SIP_STATE_OLD_KEY;
+    const key = localStorage.getItem(SIP_STATE_KEY)
+      ? SIP_STATE_KEY
+      : (localStorage.getItem(SIP_STATE_V3_KEY) ? SIP_STATE_V3_KEY : SIP_STATE_OLD_KEY);
     const sipState = JSON.parse(localStorage.getItem(key) || '{}');
     sipState.records = sipState.records || {};
     sipState.records[record.sipName] = (sipState.records[record.sipName] || []).filter((r) => r.id !== record.rawId);
