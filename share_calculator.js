@@ -30,74 +30,68 @@
       return;
     }
 
-    const usedPrice = side === 'sell' ? sell : buy;
-    const transactionAmount = usedPrice * qty;
-    const nepseCommission = calculateCommission(transactionAmount);
-    const sebonFee = transactionAmount * SEBON_RATE;
-
     if (side === 'buy') {
-      const totalPayable = transactionAmount + nepseCommission + sebonFee + DP_CHARGE;
+      const transactionAmount = buy * qty;
+      const commission = calculateCommission(transactionAmount);
+      const sebonFee = transactionAmount * SEBON_RATE;
+      const totalPayable = transactionAmount + commission + sebonFee + DP_CHARGE;
       const costPerShare = totalPayable / qty;
 
       setResults({
         transactionAmount,
-        nepseCommission,
+        commission,
         sebonFee,
-        dpCharge: DP_CHARGE,
-        totalPayable,
-        costPerShare,
-        finalLabel: 'Total Amount Payable (Rs)',
-        finalValue: totalPayable,
+        tax: 0,
+        preTaxTotal: totalPayable,
+        finalTotal: totalPayable,
         secondaryLabel: 'Cost Price Per Share (Rs)',
         secondaryValue: costPerShare,
+        finalLabel: 'Total Amount Payable (Rs)',
         profit: 0,
-        tax: 0,
       });
       return;
     }
 
-    const totalReceivable = transactionAmount - nepseCommission - sebonFee - DP_CHARGE;
-    const grossProfit = (sell - buy) * qty;
-    const netProfitBeforeTax = grossProfit - nepseCommission - sebonFee - DP_CHARGE;
-    const tax = netProfitBeforeTax > 0 ? netProfitBeforeTax * CGT_RATE_INDIVIDUAL : 0;
-    const finalReceivable = totalReceivable - tax;
+    const sellAmount = sell * qty;
+    const buyAmount = buy * qty;
+
+    const sellCommission = calculateCommission(sellAmount);
+    const sellSebonFee = sellAmount * SEBON_RATE;
+    const buyCommission = calculateCommission(buyAmount);
+    const buySebonFee = buyAmount * SEBON_RATE;
+
+    const profitBeforeTax = sellAmount - buyAmount - (sellCommission + sellSebonFee + DP_CHARGE) - (buyCommission + buySebonFee + DP_CHARGE);
+    const tax = profitBeforeTax > 0 ? profitBeforeTax * CGT_RATE_INDIVIDUAL : 0;
+    const receivableBeforeTax = sellAmount - sellCommission - sellSebonFee - DP_CHARGE;
+    const finalReceivable = receivableBeforeTax - tax;
 
     setResults({
-      transactionAmount,
-      nepseCommission,
-      sebonFee,
-      dpCharge: DP_CHARGE,
-      totalPayable: totalReceivable,
-      costPerShare: finalReceivable / qty,
-      finalLabel: 'Final Receivable (Rs)',
-      finalValue: finalReceivable,
-      secondaryLabel: 'Net Profit / Loss (after charges, before tax)',
-      secondaryValue: netProfitBeforeTax,
-      profit: netProfitBeforeTax,
+      transactionAmount: sellAmount,
+      commission: sellCommission,
+      sebonFee: sellSebonFee,
       tax,
+      preTaxTotal: receivableBeforeTax,
+      finalTotal: finalReceivable,
+      secondaryLabel: 'Profit / Loss (Rs)',
+      secondaryValue: profitBeforeTax - tax,
+      finalLabel: 'Total Amount Receivable (Rs)',
+      profit: profitBeforeTax - tax,
     });
   }
 
   function setResults(result = {}) {
-    const transactionAmount = result.transactionAmount || 0;
-    const nepseCommission = result.nepseCommission || 0;
-    const sebonFee = result.sebonFee || 0;
-    const dpCharge = result.dpCharge ?? DP_CHARGE;
-    const totalPayable = result.totalPayable || 0;
-    const costPerShare = result.costPerShare || 0;
-
-    text('transactionAmount', money(transactionAmount));
-    text('commission', money(nepseCommission));
-    text('sebonFee', money(sebonFee));
-    text('dpCharge', money(dpCharge));
-    text('totalPayable', money(totalPayable));
-    text('costPerShare', money(costPerShare));
+    text('transactionAmount', money(result.transactionAmount || 0));
+    text('commission', money(result.commission || 0));
+    text('sebonFee', money(result.sebonFee || 0));
+    text('dpCharge', money(DP_CHARGE));
+    text('totalPayable', money(result.preTaxTotal || 0));
     text('capitalGainTax', money(result.tax || 0));
     text('profitValue', money(result.profit || 0));
 
     text('finalLabel', result.finalLabel || 'Total Amount Payable (Rs)');
     text('secondaryLabel', result.secondaryLabel || 'Cost Price Per Share (Rs)');
     text('secondaryValue', money(result.secondaryValue || 0));
+    text('costPerShare', money(result.finalTotal || 0));
   }
 
   function calculateCommission(amount) {

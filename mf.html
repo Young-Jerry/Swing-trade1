@@ -63,18 +63,18 @@
     </section>
 
     <section class="card section">
-      <h3>Monthly SIP Entry (15th fixed)</h3>
+      <h3>Add Monthly SIP Data (15th fixed)</h3>
       <form id="monthlyForm" class="form-grid" autocomplete="off">
         <label>SIP<select name="sipName" required></select></label>
         <label>Units<input name="units" type="number" min="0" step="0.0001" required /></label>
         <label>NAV<input name="nav" type="number" min="0" step="0.0001" required /></label>
-        <label>Entry Date<input name="entryDate" type="date" required /></label>
-        <button class="btn-primary" type="submit">Add Monthly Entry</button>
+        <label>Due Month<input name="dueMonth" type="month" required /></label>
+        <button class="btn-primary" type="submit">Add Monthly Entry (15th)</button>
       </form>
     </section>
 
     <section class="card section">
-      <h3>Pending Dues</h3>
+      <h3>Dues Tab (from Add Monthly SIP Data)</h3>
       <ul id="pendingDues" class="legend"></ul>
     </section>
 

@@ -1,5 +1,6 @@
 (function () {
   const TRADES_KEY = 'trades';
+  const LONGTERM_KEY = 'longterm';
   const SIP_STATE_KEY = 'sipStateV2';
   const EXITED_KEY = 'exitedTrades';
 
@@ -82,6 +83,16 @@
       ref: 'trades',
     }));
 
+    const longTermRows = readJson(LONGTERM_KEY).map((row) => ({
+      id: `l-${row.id}`,
+      rawId: row.id,
+      source: 'Long Term',
+      name: row.script || 'Holding',
+      qty: Number(row.qty || 0),
+      price: Number(row.wacc || 0),
+      ref: 'longterm',
+    }));
+
     const sipState = JSON.parse(localStorage.getItem(SIP_STATE_KEY) || '{}');
     const sipRows = [];
     Object.entries(sipState.records || {}).forEach(([sipName, rows]) => {
@@ -99,19 +110,20 @@
       });
     });
 
-    return [...tradeRows, ...sipRows];
+    return [...tradeRows, ...longTermRows, ...sipRows];
   }
 
   function updateRecord(record, qty, price) {
     if (!Number.isFinite(qty) || !Number.isFinite(price) || qty <= 0 || price <= 0) return;
 
-    if (record.ref === 'trades') {
-      const rows = readJson(TRADES_KEY);
+    if (record.ref === 'trades' || record.ref === 'longterm') {
+      const storageKey = record.ref === 'trades' ? TRADES_KEY : LONGTERM_KEY;
+      const rows = readJson(storageKey);
       const row = rows.find((r) => r.id === record.rawId);
       if (!row) return;
       row.qty = qty;
       row.wacc = price;
-      localStorage.setItem(TRADES_KEY, JSON.stringify(rows));
+      localStorage.setItem(storageKey, JSON.stringify(rows));
       return;
     }
 
@@ -126,9 +138,10 @@
   }
 
   function removeRecord(record) {
-    if (record.ref === 'trades') {
-      const rows = readJson(TRADES_KEY).filter((r) => r.id !== record.rawId);
-      localStorage.setItem(TRADES_KEY, JSON.stringify(rows));
+    if (record.ref === 'trades' || record.ref === 'longterm') {
+      const storageKey = record.ref === 'trades' ? TRADES_KEY : LONGTERM_KEY;
+      const rows = readJson(storageKey).filter((r) => r.id !== record.rawId);
+      localStorage.setItem(storageKey, JSON.stringify(rows));
       return;
     }
 
