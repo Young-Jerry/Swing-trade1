@@ -24,44 +24,71 @@
 
   <main class="container">
     <h1>SIP System</h1>
-    <p class="subtitle">Monthly SIP tracker with fixed NAV entries and unit-based records.</p>
+    <p class="subtitle">Structured SIPs with manual/lump-sum/monthly due tracking and NAV syncing.</p>
 
     <section class="card section">
-      <div class="summary-grid">
-        <div class="summary-item">Total Invested: <strong id="totalInvested">₨0</strong></div>
-        <div class="summary-item">Total Units Owned: <strong id="totalUnits">0</strong></div>
-        <div class="summary-item">Remaining Units: <strong id="remainingUnits">0</strong></div>
+      <div class="toolbar">
+        <div class="summary-grid">
+          <div class="summary-item">Total Units: <strong id="sipTotalUnits">0</strong></div>
+          <div class="summary-item">Current NAV: <strong id="sipCurrentNav">₨0</strong></div>
+          <div class="summary-item">Total Value: <strong id="sipTotalValue">₨0</strong></div>
+        </div>
+        <div class="save-indicator" id="sipMessage">Saved ✓</div>
       </div>
+      <div class="sip-tabs" id="sipTabs"></div>
     </section>
 
     <section class="card section">
-      <h3>Add Monthly SIP Entry</h3>
-      <form id="sipForm" class="form-grid" autocomplete="off">
-        <label>Date<input data-next type="date" name="date" required /></label>
-        <label>Amount Invested<input data-next type="number" name="amount" min="0" step="0.01" required /></label>
-        <label>NAV<input data-next type="number" name="nav" min="0" step="0.0001" required /></label>
-        <button class="btn-primary" type="submit">Add SIP Entry</button>
+      <h3>Add Manual SIP</h3>
+      <form id="manualSipForm" class="form-grid" autocomplete="off">
+        <label>SIP
+          <select name="sipName" id="sipSelect" required></select>
+        </label>
+        <label>New SIP Name
+          <input name="newSipName" type="text" placeholder="Only for OTHERS/custom" />
+        </label>
+        <button class="btn-primary" type="submit">Add SIP Type</button>
+        <button class="btn-danger" type="button" id="deleteSipBtn">Delete Selected SIP</button>
       </form>
     </section>
 
     <section class="card section">
-      <h3>Partial Exit (Optional)</h3>
-      <form id="partialExitForm" class="form-grid" autocomplete="off">
-        <label>Units to Sell<input type="number" name="unitsToSell" min="0" step="0.0001" /></label>
-        <button class="btn-secondary" type="submit">Apply Exit</button>
+      <h3>Add Lump Sum SIP</h3>
+      <form id="lumpSumForm" class="form-grid" autocomplete="off">
+        <label>SIP<select name="sipName" required></select></label>
+        <label>Amount<input name="amount" type="number" min="0" step="0.01" required /></label>
+        <label>NAV<input name="nav" type="number" min="0" step="0.0001" required /></label>
+        <button class="btn-primary" type="submit">Add Lump Sum</button>
       </form>
-      <p class="subtitle" id="exitMessage">No partial exit applied.</p>
     </section>
 
     <section class="card section">
+      <h3>Monthly SIP Entry (15th fixed)</h3>
+      <form id="monthlyForm" class="form-grid" autocomplete="off">
+        <label>SIP<select name="sipName" required></select></label>
+        <label>Units<input name="units" type="number" min="0" step="0.0001" required /></label>
+        <label>NAV<input name="nav" type="number" min="0" step="0.0001" required /></label>
+        <label>Entry Date<input name="entryDate" type="date" required /></label>
+        <button class="btn-primary" type="submit">Add Monthly Entry</button>
+      </form>
+    </section>
+
+    <section class="card section">
+      <h3>Pending Dues</h3>
+      <ul id="pendingDues" class="legend"></ul>
+    </section>
+
+    <section class="card section">
+      <h3>SIP History</h3>
       <div class="table-wrap">
         <table id="sipTable">
           <thead>
             <tr>
               <th>Date</th>
-              <th>Amount</th>
-              <th>NAV</th>
+              <th>Type</th>
               <th>Units</th>
+              <th>NAV</th>
+              <th>Amount</th>
             </tr>
           </thead>
           <tbody></tbody>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Past Trades Exit Analysis | Portfolio Management System</title>
+  <title>Past Trades | Portfolio Management System</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -23,67 +23,33 @@
   </header>
 
   <main class="container">
-    <h1>Past Trades Exit Analysis</h1>
-    <p class="subtitle">Select an existing trade and simulate exit scenarios only.</p>
+    <h1>Past Trades Manager</h1>
+    <p class="subtitle">Edit, delete, or exit active trades. Exiting removes them from source pages.</p>
 
     <section class="card section">
-      <form id="analysisForm" class="form-grid" autocomplete="off">
-        <label>
-          Select Trade
-          <select id="tradeSelect" name="tradeId" required></select>
-        </label>
-        <label>
-          Entry Price
-          <input id="entryPrice" type="number" min="0" step="0.01" readonly />
-        </label>
-        <label>
-          Quantity
-          <input id="quantity" type="number" min="0" step="1" readonly />
-        </label>
-        <label>
-          Exit Price
-          <input id="exitPrice" type="number" min="0" step="0.01" required />
-        </label>
-        <label>
-          Holding Days
-          <input id="holdingDays" type="number" min="1" step="1" required />
-        </label>
-        <button class="btn-primary" type="submit">Save Simulation</button>
-      </form>
-    </section>
-
-    <section class="card section">
-      <h3>Scenario Output</h3>
+      <h3>Active Trade/SIP Records</h3>
       <div class="table-wrap">
-        <table>
-          <tbody>
-            <tr><th>Entry Price</th><td id="outEntry">₨0</td></tr>
-            <tr><th>Exit Price</th><td id="outExit">₨0</td></tr>
-            <tr><th>Quantity</th><td id="outQty">0</td></tr>
-            <tr><th>Profit/Loss</th><td id="outPL">₨0</td></tr>
-            <tr><th>% Return</th><td id="outPct">0%</td></tr>
-            <tr><th>Holding Days</th><td id="outDays">0</td></tr>
-            <tr><th>Return per day</th><td id="outDaily">₨0</td></tr>
-          </tbody>
+        <table id="activeTradesTable">
+          <thead>
+            <tr>
+              <th>Source</th>
+              <th>Name</th>
+              <th>Qty/Units</th>
+              <th>Price (WACC/NAV)</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
         </table>
       </div>
     </section>
 
     <section class="card section">
-      <h3>Saved Simulations</h3>
+      <h3>Exited Trades</h3>
       <div class="table-wrap">
-        <table id="simTable">
+        <table id="exitedTable">
           <thead>
-            <tr>
-              <th>Trade</th>
-              <th>Entry</th>
-              <th>Exit</th>
-              <th>Qty</th>
-              <th>P/L</th>
-              <th>% Return</th>
-              <th>Days</th>
-              <th>Return/Day</th>
-            </tr>
+            <tr><th>Date</th><th>Source</th><th>Name</th><th>Qty/Units</th><th>Price</th></tr>
           </thead>
           <tbody></tbody>
         </table>

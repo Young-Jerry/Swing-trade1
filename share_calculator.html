@@ -24,7 +24,7 @@
 
   <main class="container">
     <h1>NEPSE Share Calculator</h1>
-    <p class="subtitle">This calculator is separate from portfolio P/L calculations.</p>
+    <p class="subtitle">Uses slab-based broker commission + SEBON fee + DP charge.</p>
 
     <section class="calc-grid">
       <article class="card section">
@@ -36,7 +36,7 @@
               <option value="sell">Sell</option>
             </select>
           </label>
-          <label>Purchase Price (Rs)
+          <label>Buy Price / WACC (Rs)
             <input id="purchasePrice" type="number" min="0" step="0.01" required />
           </label>
           <label>Number of Shares
@@ -52,11 +52,14 @@
         <h3>Results</h3>
         <ul class="result-list">
           <li><span>Transaction Amount</span><strong id="transactionAmount">₨0</strong></li>
-          <li><span>Commission</span><strong id="commission">₨0</strong></li>
-          <li><span>SEBON Fee (0.015%)</span><strong id="sebonFee">₨0</strong></li>
+          <li><span>NEPSE Commission</span><strong id="commission">₨0</strong></li>
+          <li><span>SEBON Regulatory Fee (0.015%)</span><strong id="sebonFee">₨0</strong></li>
           <li><span>DP Charge</span><strong id="dpCharge">₨25</strong></li>
-          <li><span>Total Amount Payable (Rs)</span><strong id="totalPayable">₨0</strong></li>
-          <li><span>Cost Price Per Share (Rs)</span><strong id="costPerShare">₨0</strong></li>
+          <li><span>Total (Buy: payable / Sell: receivable before tax)</span><strong id="totalPayable">₨0</strong></li>
+          <li><span>Capital Gain Tax (5% if profit &gt; 0)</span><strong id="capitalGainTax">₨0</strong></li>
+          <li><span id="secondaryLabel">Cost Price Per Share (Rs)</span><strong id="secondaryValue">₨0</strong></li>
+          <li><span>Net Profit / Loss (Sell)</span><strong id="profitValue">₨0</strong></li>
+          <li><span id="finalLabel">Total Amount Payable (Rs)</span><strong id="costPerShare">₨0</strong></li>
         </ul>
       </article>
     </section>
