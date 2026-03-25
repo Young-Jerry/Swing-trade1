@@ -1,11 +1,10 @@
 (() => {
   let booted = false;
+  const colors = ['#f4b942', '#2ac07e', '#4e89ff'];
 
   const boot = () => {
     if (booted) return;
     booted = true;
-    const EXITED_KEY = 'exitedTradesV2';
-    const colors = ['#f4b942', '#2ac07e', '#4e89ff'];
     const keys = [
       { id: 'trades', label: 'Trades', node: 'totalTrades', total: tradeLikeTotal },
       { id: 'longterm', label: 'Long Term', node: 'totalLongTerm', total: tradeLikeTotal },
@@ -87,12 +86,16 @@
 
   function restorePortfolioSnapshot(payload) {
     const backup = payload && typeof payload === 'object' ? payload : null;
-    if (!backup || backup.format !== 'pms-local-backup-v1' || !backup.data || typeof backup.data !== 'object') {
-      throw new Error('Unexpected backup format');
-    }
+    if (!backup) throw new Error('Unexpected backup format');
+
+    const data = backup.format === 'pms-local-backup-v1' ? backup.data : backup;
+    if (!data || typeof data !== 'object') throw new Error('Unexpected backup format');
+
+    const entries = Object.entries(data).filter(([key, value]) => typeof key === 'string' && typeof value === 'string');
+    if (!entries.length) throw new Error('No restorable data in file');
+
     localStorage.clear();
-    Object.entries(backup.data).forEach(([key, value]) => {
-      if (typeof key !== 'string' || typeof value !== 'string') return;
+    entries.forEach(([key, value]) => {
       localStorage.setItem(key, value);
     });
   }
