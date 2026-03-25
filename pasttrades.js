@@ -17,59 +17,73 @@
     activeBody.innerHTML = '';
     active.forEach((row) => {
       const tr = document.createElement('tr');
+      tr.className = 'operator-row';
       tr.innerHTML = `
+        <td><button class="btn-secondary" data-action="toggle" data-id="${row.id}">Row Operator</button></td>
         <td>${row.source}</td>
         <td>${escapeHtml(row.name)}</td>
         <td>${fmtQty(row.qty)}</td>
         <td>${currency(row.price)}</td>
-        <td>
-          <button class="btn-secondary" data-action="edit" data-id="${row.id}">Edit</button>
-          <button class="btn-danger" data-action="delete" data-id="${row.id}">Delete</button>
-          <button class="btn-primary" data-action="exit" data-id="${row.id}">Exit Trade</button>
-        </td>
       `;
       activeBody.appendChild(tr);
+
+      const detail = document.createElement('tr');
+      detail.className = 'operator-detail hidden';
+      detail.dataset.id = row.id;
+      detail.innerHTML = `
+        <td colspan="5">
+          <div class="actions-cell">
+            <button class="btn-primary" data-action="exit" data-id="${row.id}">Exit Trade</button>
+          </div>
+        </td>
+      `;
+      activeBody.appendChild(detail);
     });
 
     exitedBody.innerHTML = '';
     exited.forEach((row) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${row.exitedAt}</td><td>${row.source}</td><td>${escapeHtml(row.name)}</td><td>${fmtQty(row.qty)}</td><td>${currency(row.price)}</td>`;
+      tr.innerHTML = `
+        <td>${row.source}</td>
+        <td>${escapeHtml(row.name)}</td>
+        <td>${fmtQty(row.qty)}</td>
+        <td>${currency(row.price)}</td>
+        <td>${holdingDays(row.openedAt, row.exitedAt)} days</td>
+        <td><button class="btn-danger" data-action="removeExited" data-id="${row.id}">Remove</button></td>
+      `;
       exitedBody.appendChild(tr);
     });
 
-    activeBody.querySelectorAll('button').forEach((btn) => {
+    document.querySelectorAll('button[data-action]').forEach((btn) => {
       btn.addEventListener('click', () => handleAction(btn.dataset.action, btn.dataset.id));
     });
   }
 
   function handleAction(action, id) {
+    if (action === 'toggle') {
+      const detail = activeBody.querySelector(`tr.operator-detail[data-id="${id}"]`);
+      if (detail) detail.classList.toggle('hidden');
+      return;
+    }
+
+    if (action === 'removeExited') {
+      const exited = readJson(EXITED_KEY).filter((row) => row.id !== id);
+      localStorage.setItem(EXITED_KEY, JSON.stringify(exited));
+      render();
+      return;
+    }
+
+    if (action !== 'exit') return;
+
     const active = getActiveRecords();
     const record = active.find((r) => r.id === id);
     if (!record) return;
 
-    if (action === 'edit') {
-      const qty = prompt('New Qty/Units', String(record.qty));
-      const price = prompt('New WACC/NAV', String(record.price));
-      if (qty === null || price === null) return;
-      updateRecord(record, Number(qty), Number(price));
-      render();
-      return;
-    }
-
-    if (action === 'delete') {
-      removeRecord(record);
-      render();
-      return;
-    }
-
-    if (action === 'exit') {
-      const exited = readJson(EXITED_KEY);
-      exited.push({ ...record, exitedAt: new Date().toISOString().slice(0, 10) });
-      localStorage.setItem(EXITED_KEY, JSON.stringify(exited));
-      removeRecord(record);
-      render();
-    }
+    const exited = readJson(EXITED_KEY);
+    exited.push({ ...record, exitedAt: new Date().toISOString() });
+    localStorage.setItem(EXITED_KEY, JSON.stringify(exited));
+    removeRecord(record);
+    render();
   }
 
   function getActiveRecords() {
@@ -80,6 +94,7 @@
       name: row.script || 'Trade',
       qty: Number(row.qty || 0),
       price: Number(row.wacc || 0),
+      openedAt: row.createdAt || row.id,
       ref: 'trades',
     }));
 
@@ -90,6 +105,7 @@
       name: row.script || 'Holding',
       qty: Number(row.qty || 0),
       price: Number(row.wacc || 0),
+      openedAt: row.createdAt || row.id,
       ref: 'longterm',
     }));
 
@@ -105,36 +121,13 @@
           name: sipName,
           qty: Number(row.units || 0),
           price: Number(row.nav || 0),
+          openedAt: row.date,
           ref: 'sip',
         });
       });
     });
 
     return [...tradeRows, ...longTermRows, ...sipRows];
-  }
-
-  function updateRecord(record, qty, price) {
-    if (!Number.isFinite(qty) || !Number.isFinite(price) || qty <= 0 || price <= 0) return;
-
-    if (record.ref === 'trades' || record.ref === 'longterm') {
-      const storageKey = record.ref === 'trades' ? TRADES_KEY : LONGTERM_KEY;
-      const rows = readJson(storageKey);
-      const row = rows.find((r) => r.id === record.rawId);
-      if (!row) return;
-      row.qty = qty;
-      row.wacc = price;
-      localStorage.setItem(storageKey, JSON.stringify(rows));
-      return;
-    }
-
-    const sipState = JSON.parse(localStorage.getItem(SIP_STATE_KEY) || '{}');
-    const rows = sipState.records?.[record.sipName] || [];
-    const row = rows.find((r) => r.id === record.rawId);
-    if (!row) return;
-    row.units = qty;
-    row.nav = price;
-    row.amount = qty * price;
-    localStorage.setItem(SIP_STATE_KEY, JSON.stringify(sipState));
   }
 
   function removeRecord(record) {
@@ -152,6 +145,14 @@
 
   function readJson(key) {
     try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
+  }
+
+  function holdingDays(openedAt, exitedAt) {
+    const start = new Date(openedAt);
+    const end = new Date(exitedAt);
+    if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime())) return 0;
+    const ms = end.getTime() - start.getTime();
+    return Math.max(0, Math.floor(ms / 86400000));
   }
 
   function fmtQty(value) {

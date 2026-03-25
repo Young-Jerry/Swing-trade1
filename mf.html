@@ -24,7 +24,7 @@
 
   <main class="container">
     <h1>SIP System</h1>
-    <p class="subtitle">Structured SIPs with manual/lump-sum/monthly due tracking and NAV syncing.</p>
+    <p class="subtitle">Structured SIPs with cleaner controls and selectable history.</p>
 
     <section class="card section">
       <div class="toolbar">
@@ -41,13 +41,10 @@
     <section class="card section">
       <h3>Add Manual SIP</h3>
       <form id="manualSipForm" class="form-grid" autocomplete="off">
-        <label>SIP
-          <select name="sipName" id="sipSelect" required></select>
-        </label>
         <label>New SIP Name
-          <input name="newSipName" type="text" placeholder="Only for OTHERS/custom" />
+          <input name="newSipName" type="text" placeholder="Example: NABIL" required />
         </label>
-        <button class="btn-primary" type="submit">Add SIP Type</button>
+        <button class="btn-primary" type="submit">Add Manual SIP</button>
         <button class="btn-danger" type="button" id="deleteSipBtn">Delete Selected SIP</button>
       </form>
     </section>
@@ -56,8 +53,8 @@
       <h3>Add Lump Sum SIP</h3>
       <form id="lumpSumForm" class="form-grid" autocomplete="off">
         <label>SIP<select name="sipName" required></select></label>
-        <label>Amount<input name="amount" type="number" min="0" step="0.01" required /></label>
-        <label>NAV<input name="nav" type="number" min="0" step="0.0001" required /></label>
+        <label>Amount<input name="amount" type="number" min="1" step="0.01" required /></label>
+        <label>NAV<input name="nav" type="number" min="0.01" step="0.0001" required /></label>
         <button class="btn-primary" type="submit">Add Lump Sum</button>
       </form>
     </section>
@@ -66,29 +63,45 @@
       <h3>Add Monthly SIP Data (15th fixed)</h3>
       <form id="monthlyForm" class="form-grid" autocomplete="off">
         <label>SIP<select name="sipName" required></select></label>
-        <label>Units<input name="units" type="number" min="0" step="0.0001" required /></label>
-        <label>NAV<input name="nav" type="number" min="0" step="0.0001" required /></label>
+        <label>Units (Whole Number)<input name="units" type="number" min="1" step="1" required /></label>
+        <label>NAV<input name="nav" type="number" min="0.01" step="0.0001" required /></label>
         <label>Due Month<input name="dueMonth" type="month" required /></label>
-        <button class="btn-primary" type="submit">Add Monthly Entry (15th)</button>
+        <button class="btn-primary" type="submit">Add Monthly Entry</button>
       </form>
     </section>
 
     <section class="card section">
-      <h3>Dues Tab (from Add Monthly SIP Data)</h3>
+      <h3>Change NAV</h3>
+      <form id="navForm" class="form-grid" autocomplete="off">
+        <label>SIP<select name="sipName" required></select></label>
+        <label>New NAV<input name="nav" type="number" min="0.01" step="0.0001" required /></label>
+        <button class="btn-secondary" type="submit">Update NAV</button>
+      </form>
+    </section>
+
+    <section class="card section">
+      <h3>Dues</h3>
       <ul id="pendingDues" class="legend"></ul>
     </section>
 
     <section class="card section">
-      <h3>SIP History</h3>
+      <div class="toolbar">
+        <h3>SIP History</h3>
+        <label>SIP Filter
+          <select id="historySipSelect"></select>
+        </label>
+      </div>
       <div class="table-wrap">
         <table id="sipTable">
           <thead>
             <tr>
               <th>Date</th>
+              <th>SIP</th>
               <th>Type</th>
               <th>Units</th>
               <th>NAV</th>
               <th>Amount</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody></tbody>
