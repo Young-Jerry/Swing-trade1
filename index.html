@@ -14,6 +14,7 @@
         <li><a class="active" href="index.html">Dashboard</a></li>
         <li><a href="trades.html">Trades</a></li>
         <li><a href="longterm.html">Long Term</a></li>
+        <li><a href="mf.html">SIP System</a></li>
                 <li><a href="pasttrades.html">Past Trades</a></li>
         <li><a href="journal.html">📚</a></li>
         <li><a href="share_calculator.html">🧮</a></li>
@@ -35,6 +36,10 @@
         <div class="stat-label">Total Value of Long Term</div>
         <div class="stat-value" id="totalLongTerm">Rs 0</div>
       </article>
+      <article class="card stat-card">
+        <div class="stat-label">Total SIP Value</div>
+        <div class="stat-value" id="totalSip">Rs 0</div>
+      </article>
             <article class="card stat-card">
         <div class="stat-label">Portfolio Value (DP Holding)</div>
         <div class="stat-value" id="combinedTotal">Rs 0</div>
@@ -48,26 +53,13 @@
     <section class="dashboard-layout">
       <article class="card pie-wrap">
         <h3>Portfolio Allocation</h3>
-        <p class="subtitle">Trades vs Long Term</p>
+        <p class="subtitle">Trades vs Long Term vs SIP</p>
         <div id="allocationPie" aria-label="Allocation pie chart"></div>
       </article>
       <article class="card pie-wrap">
         <h3>Allocation Breakdown</h3>
         <ul class="legend" id="allocationLegend"></ul>
       </article>
-    </section>
-
-    <section class="card section">
-      <h3>Backup & Restore Portfolio</h3>
-      <p class="subtitle">Download all saved portfolio data to a file and upload the same file later to restore everything.</p>
-      <div class="toolbar">
-        <button id="downloadPortfolioBtn" class="btn-primary" type="button">Download Portfolio File</button>
-        <label class="btn-secondary file-btn" for="uploadPortfolioInput">
-          Upload Portfolio File
-          <input id="uploadPortfolioInput" type="file" accept="application/json,.json" />
-        </label>
-        <span id="backupStatus" class="save-indicator">Ready</span>
-      </div>
     </section>
 
     <section class="card profit-panel">
@@ -91,13 +83,26 @@
         <canvas id="profitChart" class="profit-chart" width="960" height="260" aria-label="Profit loss history chart"></canvas>
       </div>
     </section>
+
+    <section class="card section">
+      <h3>Backup & Restore Portfolio</h3>
+      <p class="subtitle">Download all saved portfolio data to a file and upload the same file later to restore everything.</p>
+      <div class="toolbar">
+        <button id="downloadPortfolioBtn" class="btn-primary" type="button">Download Portfolio File</button>
+        <label class="btn-secondary file-btn" for="uploadPortfolioInput">
+          Upload Portfolio File
+          <input id="uploadPortfolioInput" type="file" accept="application/json,.json" />
+        </label>
+        <span id="backupStatus" class="save-indicator">Ready</span>
+      </div>
+    </section>
     <footer class="subtitle" style="margin-top:16px; text-align:center;">NEPSE Explained - Sohaum Mainali</footer>
   </main>
 
-  <script src="trade-math.js"></script>
-  <script src="capital-manager.js"></script>
+  <script defer src="trade-math.js"></script>
+  <script defer src="capital-manager.js"></script>
   <script type="module" src="firebase-sync.js"></script>
-  <script src="data-recorder.js"></script>
-  <script src="script.js"></script>
+  <script defer src="data-recorder.js"></script>
+  <script defer src="script.js"></script>
 </body>
 </html>
