@@ -62,11 +62,8 @@
       <h3>Installment</h3>
       <form id="installmentForm" class="form-grid" autocomplete="off">
         <label>SIP<select name="sipName" required></select></label>
-        <label>Month
-          <input name="month" type="month" required />
-        </label>
         <label>Date
-          <input name="date" type="text" readonly value="15th (auto)" />
+          <input name="date" type="date" required />
         </label>
         <label>QTY<input name="units" type="number" min="1" step="1" required /></label>
         <label>NAV<input name="nav" type="number" min="0.01" step="0.0001" required /></label>
