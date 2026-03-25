@@ -4,47 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Trades | Portfolio Management System</title>
-  <link rel="stylesheet" href="style.css" />
-  <style>
-    .container { max-width: 1100px; margin: 0 auto; }
-    .section { margin-top: 20px; }
-    .trade-form {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-      align-items: end;
-    }
-    .trade-form label { display: flex; flex-direction: column; gap: 6px; font-size: 0.9rem; }
-    .trade-form input {
-      background: #101826;
-      border: 1px solid #334;
-      color: #fff;
-      border-radius: 6px;
-      padding: 10px;
-    }
-    .btn-primary, .btn-danger {
-      border: none;
-      border-radius: 6px;
-      padding: 10px 12px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .btn-primary { background: #ffd700; color: #111; }
-    .btn-danger { background: #c0392b; color: #fff; }
-    .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border-bottom: 1px solid #333; padding: 10px; text-align: left; }
-    .message { margin-top: 10px; color: #9ad38b; min-height: 1.2rem; }
-    .error { color: #ff7b7b; }
-  </style>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header>
-    <nav>
+  <header class="header">
+    <nav class="nav">
       <div class="logo">Portfolio Management System</div>
-      <ul>
+      <ul class="nav-links">
         <li><a href="index.html">Dashboard</a></li>
-        <li><a href="trades.html">Trades</a></li>
+        <li><a class="active" href="trades.html">Trades</a></li>
         <li><a href="longterm.html">Long Term</a></li>
         <li><a href="mf.html">SIP System</a></li>
         <li><a href="pasttrades.html">Past Trades</a></li>
@@ -54,56 +22,56 @@
     </nav>
   </header>
 
-  <main class="container">
-    <h1>Trades (Firebase Realtime Database)</h1>
+  <main class="container" data-portfolio-key="trades" data-portfolio-title="Trades Portfolio" data-show-ranges="true">
+    <h1>Trades Portfolio</h1>
+    <p class="subtitle">Manual tracking mode: no API fetch, values are fully editable.</p>
 
     <section class="card section">
-      <h2>Add Trade</h2>
-      <form id="tradeForm" class="trade-form" autocomplete="off">
-        <label>Stock Name
-          <input type="text" name="stockName" required />
-        </label>
-        <label>Buy Price
-          <input type="number" name="buyPrice" min="0" step="0.01" required />
-        </label>
-        <label>Quantity
-          <input type="number" name="quantity" min="1" step="1" required />
-        </label>
-        <label>Stop Loss
-          <input type="number" name="stopLoss" min="0" step="0.01" required />
-        </label>
-        <label>Target
-          <input type="number" name="target" min="0" step="0.01" required />
-        </label>
-        <label>Date
-          <input type="date" name="date" required />
-        </label>
-        <button type="submit" class="btn-primary">Save Trade</button>
-      </form>
-      <p id="statusMessage" class="message" aria-live="polite"></p>
+      <div class="summary-grid">
+        <div class="summary-item">Total Invested: <strong id="totalInvested">₨0</strong></div>
+        <div class="summary-item">Total Current Value: <strong id="totalCurrent">₨0</strong></div>
+        <div class="summary-item">Total P/L: <strong id="totalPL">₨0</strong></div>
+      </div>
     </section>
 
     <section class="card section">
-      <h2>Saved Trades</h2>
+      <div class="toolbar">
+        <h3>Add Entry</h3>
+        <div class="save-indicator" id="saveIndicator">Saved ✓</div>
+      </div>
+      <form id="addForm" class="form-grid" autocomplete="off">
+        <label>Script<input data-next type="text" name="script" required /></label>
+        <label>Sector<input data-next type="text" name="sector" required /></label>
+        <label>LTP<input data-next type="number" name="ltp" min="0" step="0.01" required /></label>
+        <label>Qty<input data-next type="number" name="qty" min="0" step="1" required /></label>
+        <label>WACC<input data-next type="number" name="wacc" min="0" step="0.01" required /></label>
+        <label>L.R (H.R auto = 1.1× L.R)<input data-next type="number" name="sell1" min="0" step="0.01" required /></label>
+        <button class="btn-primary" type="submit">Add Trade</button>
+      </form>
+    </section>
+
+    <section class="card section">
       <div class="table-wrap">
-        <table>
+        <table id="portfolioTable" class="portfolio-table">
           <thead>
             <tr>
-              <th>Stock Name</th>
-              <th>Buy Price</th>
-              <th>Quantity</th>
-              <th>Stop Loss</th>
-              <th>Target</th>
-              <th>Date</th>
-              <th>Action</th>
+              <th data-sort="script">Script</th>
+              <th data-sort="sector">Sector</th>
+              <th data-sort="ltp">LTP</th>
+              <th data-sort="sell1">L.R / H.R</th>
+              <th data-sort="current">Current Value</th>
+              <th data-sort="pl">Total P/L</th>
+              <th data-sort="actions">Actions</th>
             </tr>
           </thead>
-          <tbody id="tradesTableBody"></tbody>
+          <tbody></tbody>
         </table>
       </div>
     </section>
   </main>
 
-  <script type="module" src="trades-firebase.js"></script>
+  <script src="firebase-sync.js"></script>
+  <script src="data-recorder.js"></script>
+  <script src="portfolio.js"></script>
 </body>
 </html>
