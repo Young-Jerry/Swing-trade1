@@ -267,3 +267,15 @@ tr:hover { background: #151d2b; }
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+#exitForm { align-items: end; }
+#exitForm button { width: 100%; }
+.file-btn {
+  min-height: 46px;
+  min-width: 136px;
+  padding: 11px 16px;
+  border-radius: 12px;
+  border: 1px solid #5f79a6;
+  cursor: pointer;
+  font-weight: 700;
+}

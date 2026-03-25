@@ -65,17 +65,18 @@
         e.preventDefault();
         const fd = new FormData(installmentForm);
         const sipName = String(fd.get('sipName'));
-        const month = String(fd.get('month'));
+        const date = String(fd.get('date'));
+        const month = monthFromDate(date);
         const units = Math.floor(num(fd.get('units')));
         const nav = num(fd.get('nav'));
-        if (!sipName || !isValidMonth(month)) return show('Select a valid month.');
+        if (!sipName || !isValidDate(date)) return show('Select a valid date.');
         if (!Number.isFinite(units) || !Number.isFinite(nav) || units <= 0 || nav <= 0) return show('Invalid QTY/NAV.');
         if (!isMonthAllowed(sipName, month)) return show(`Month must be on/after ${minimumMonthForSip(sipName)}.`);
         if (monthExists(sipName, month)) return show('This month is already paid and locked for the selected SIP.');
 
         addEntry(sipName, {
           id: crypto.randomUUID(),
-          date: month15(month),
+          date,
           units,
           nav,
         });
@@ -99,8 +100,8 @@
         renderHistory();
       });
 
-      installmentForm.elements.sipName.addEventListener('change', syncInstallmentMinMonth);
-      installmentForm.elements.month.addEventListener('change', syncInstallmentDateDisplay);
+      installmentForm.elements.sipName.addEventListener('change', syncInstallmentDateDisplay);
+      installmentForm.elements.date.addEventListener('change', syncInstallmentDateDisplay);
     }
 
     function render() {
@@ -163,7 +164,6 @@
         .join('');
       historySipSelect.value = historySip;
 
-      syncInstallmentMinMonth();
       syncInstallmentDateDisplay();
     }
 
@@ -179,13 +179,20 @@
           <td>${fmtUnits(row.units)}</td>
           <td>${fmtNav(row.nav)}</td>
           <td>${currency(row.amount)}</td>
+          ${historySip === 'ALL' ? '' : `<td class="actions-cell"><button class="btn-danger" type="button" data-action="delete" data-id="${row.id}">Delete</button></td>`}
         `;
         tbody.appendChild(tr);
       });
 
+      if (historySip !== 'ALL') {
+        tbody.querySelectorAll('button[data-action="delete"]').forEach((btn) => {
+          btn.addEventListener('click', () => deleteSipRecord(historySip, btn.dataset.id));
+        });
+      }
+
       if (!rows.length) {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="${historySip === 'ALL' ? 4 : 5}">No SIP history found for this selection.</td>`;
+        tr.innerHTML = `<td colspan="${historySip === 'ALL' ? 4 : 6}">No SIP history found for this selection.</td>`;
         tbody.appendChild(tr);
       }
     }
@@ -235,25 +242,35 @@
           <th>Units</th>
           <th>NAV</th>
           <th>Amount</th>
+          <th>Actions</th>
         </tr>
       `;
       return merged.sort((a, b) => a.date.localeCompare(b.date));
     }
 
-    function syncInstallmentMinMonth() {
+    function syncInstallmentDateDisplay() {
+      const dateInput = installmentForm.elements.date;
       const sip = installmentForm.elements.sipName.value;
-      const monthInput = installmentForm.elements.month;
-      const minMonth = minimumMonthForSip(sip);
-      monthInput.min = minMonth;
-      if (!monthInput.value || monthInput.value < minMonth) {
-        monthInput.value = minMonth;
+      const minDate = minimumDateForSip(sip);
+      dateInput.min = minDate;
+
+      if (!isValidDate(dateInput.value) || dateInput.value < minDate || monthExists(sip, monthFromDate(dateInput.value))) {
+        dateInput.value = nextInstallmentDate(sip);
       }
-      syncInstallmentDateDisplay();
     }
 
-    function syncInstallmentDateDisplay() {
-      const month = installmentForm.elements.month.value || minimumMonthForSip(installmentForm.elements.sipName.value);
-      installmentForm.elements.date.value = `${month}-15`;
+    function nextInstallmentDate(sipName) {
+      const minDate = minimumDateForSip(sipName);
+      const records = (state.records[sipName] || []).slice().sort((a, b) => a.date.localeCompare(b.date));
+      if (!records.length) return minDate;
+
+      const latest = records[records.length - 1].date;
+      const next = addMonth(month15(monthFromDate(latest)));
+      return next > minDate ? next : minDate;
+    }
+
+    function minimumDateForSip(sipName) {
+      return `${minimumMonthForSip(sipName)}-15`;
     }
 
     function minimumMonthForSip(sipName) {
@@ -271,8 +288,24 @@
       return /^\d{4}-\d{2}$/.test(value);
     }
 
+    function isValidDate(value) {
+      return /^\d{4}-\d{2}-\d{2}$/.test(value);
+    }
+
+    function monthFromDate(value) {
+      return String(value || '').slice(0, 7);
+    }
+
     function month15(month) {
       return `${month}-15`;
+    }
+
+    function addMonth(dateString) {
+      const [y, m, d] = dateString.split('-').map(Number);
+      if (!y || !m || !d) return dateString;
+      const dt = new Date(Date.UTC(y, m - 1, d));
+      dt.setUTCMonth(dt.getUTCMonth() + 1);
+      return dt.toISOString().slice(0, 10);
     }
 
     function addEntry(sipName, record) {
@@ -293,8 +326,15 @@
     }
 
     function monthExists(sipName, month) {
-      const date = month15(month);
-      return (state.records[sipName] || []).some((row) => row.date === date);
+      return (state.records[sipName] || []).some((row) => monthFromDate(row.date) === month);
+    }
+
+    function deleteSipRecord(sipName, id) {
+      state.records[sipName] = (state.records[sipName] || []).filter((row) => row.id !== id);
+      if (!state.records[sipName].length) {
+        state.currentNav[sipName] = 0;
+      }
+      persist('SIP installment deleted.');
     }
 
     function latestNav(sipName) {
