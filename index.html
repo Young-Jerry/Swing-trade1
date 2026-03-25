@@ -62,19 +62,6 @@
       </article>
     </section>
 
-    <section class="card section">
-      <h3>Backup & Restore Portfolio</h3>
-      <p class="subtitle">Download all saved portfolio data to a file and upload the same file later to restore everything.</p>
-      <div class="toolbar">
-        <button id="downloadPortfolioBtn" class="btn-primary" type="button">Download Portfolio File</button>
-        <label class="btn-secondary file-btn" for="uploadPortfolioInput">
-          Upload Portfolio File
-          <input id="uploadPortfolioInput" type="file" accept="application/json,.json" />
-        </label>
-        <span id="backupStatus" class="save-indicator">Ready</span>
-      </div>
-    </section>
-
     <section class="card profit-panel">
       <label class="profit-filter">All
         <select id="profitRange">
@@ -96,13 +83,26 @@
         <canvas id="profitChart" class="profit-chart" width="960" height="260" aria-label="Profit loss history chart"></canvas>
       </div>
     </section>
+
+    <section class="card section">
+      <h3>Backup & Restore Portfolio</h3>
+      <p class="subtitle">Download all saved portfolio data to a file and upload the same file later to restore everything.</p>
+      <div class="toolbar">
+        <button id="downloadPortfolioBtn" class="btn-primary" type="button">Download Portfolio File</button>
+        <label class="btn-secondary file-btn" for="uploadPortfolioInput">
+          Upload Portfolio File
+          <input id="uploadPortfolioInput" type="file" accept="application/json,.json" />
+        </label>
+        <span id="backupStatus" class="save-indicator">Ready</span>
+      </div>
+    </section>
     <footer class="subtitle" style="margin-top:16px; text-align:center;">NEPSE Explained - Sohaum Mainali</footer>
   </main>
 
-  <script src="trade-math.js"></script>
-  <script src="capital-manager.js"></script>
+  <script defer src="trade-math.js"></script>
+  <script defer src="capital-manager.js"></script>
   <script type="module" src="firebase-sync.js"></script>
-  <script src="data-recorder.js"></script>
-  <script src="script.js"></script>
+  <script defer src="data-recorder.js"></script>
+  <script defer src="script.js"></script>
 </body>
 </html>
