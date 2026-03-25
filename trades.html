@@ -69,56 +69,10 @@
       </div>
     </section>
 
-
-    <section class="card section">
-      <h3>Firebase Trade Records</h3>
-      <p class="subtitle">Stores Trades, Long Term, SIP, Past Trades, and Journal records in Firebase Realtime Database.</p>
-      <form id="tradeForm" class="form-grid" autocomplete="off">
-        <label>Record Type
-          <select name="recordType" id="recordType" required>
-            <option value="trades">Trades</option>
-            <option value="longterm">Long Terms</option>
-            <option value="sip">SIP</option>
-            <option value="pasttrades">Past Trades</option>
-            <option value="journal">Trade Journal</option>
-          </select>
-        </label>
-        <label>Stock Name<input type="text" name="stockName" required /></label>
-        <label>Buy Price<input type="number" name="buyPrice" min="0" step="0.01" required /></label>
-        <label>Quantity<input type="number" name="quantity" min="0" step="1" required /></label>
-        <label>Stop Loss<input type="number" name="stopLoss" min="0" step="0.01" required /></label>
-        <label>Target<input type="number" name="target" min="0" step="0.01" required /></label>
-        <label>Date<input type="date" name="date" required /></label>
-        <label>Journal Note
-          <textarea name="journalNote" rows="2" placeholder="Required for journal entries"></textarea>
-        </label>
-        <label>Sold Price
-          <input type="number" name="soldPrice" min="0" step="0.01" placeholder="For past trades" />
-        </label>
-        <label>Holding Days
-          <input type="number" name="holdingDays" min="0" step="1" placeholder="For past trades" />
-        </label>
-        <button class="btn-primary" type="submit">Save to Firebase</button>
-      </form>
-      <p id="statusMessage" class="subtitle" style="margin-top:8px;">Ready.</p>
-
-      <div class="table-wrap" style="margin-top:12px;">
-        <table>
-          <thead>
-            <tr>
-              <th>Type</th><th>Stock</th><th>Buy</th><th>Qty</th><th>SL</th><th>Target</th><th>Date</th><th>Journal</th><th>Sold</th><th>Holding</th><th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="tradesTableBody"></tbody>
-        </table>
-      </div>
-    </section>
-
   </main>
 
   <script type="module" src="firebase-sync.js"></script>
   <script src="data-recorder.js"></script>
   <script src="portfolio.js"></script>
-  <script type="module" src="trades-firebase.js"></script>
 </body>
 </html>

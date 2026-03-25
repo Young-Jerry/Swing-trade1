@@ -25,6 +25,7 @@ const originalRemoveItem = storageProto.removeItem;
 const originalClear = storageProto.clear;
 let suppressSync = false;
 let syncTimer;
+let periodicPushTimer;
 
 function shouldTrackKey(key) {
   return Boolean(key) && key !== META_KEY;
@@ -59,6 +60,27 @@ function schedulePush() {
   }, 250);
 }
 
+function startDurabilitySync() {
+  clearInterval(periodicPushTimer);
+  periodicPushTimer = setInterval(() => {
+    if (document.visibilityState !== 'hidden') {
+      pushAll().catch((err) => console.warn('Firebase periodic push failed:', err));
+    }
+  }, 15000);
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      pushAll().catch((err) => console.warn('Firebase visibility push failed:', err));
+    }
+  });
+
+  window.addEventListener('beforeunload', () => {
+    if (!suppressSync) {
+      pushAll().catch((err) => console.warn('Firebase unload push failed:', err));
+    }
+  });
+}
+
 function applyRemote(remote) {
   const keys = remote && typeof remote === 'object' ? remote.keys : null;
   if (!keys || typeof keys !== 'object') return;
@@ -90,6 +112,7 @@ function patchStorage() {
 
 async function bootstrap() {
   patchStorage();
+  startDurabilitySync();
   const snap = await get(storageRef);
   if (snap.exists()) applyRemote(snap.val());
   await pushAll();
