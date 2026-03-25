@@ -19,65 +19,81 @@ const firebaseConfig = {
   measurementId: 'G-8J9R9GWRTX',
 };
 
-const app = initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig, 'tradeCrudApp');
 const db = getDatabase(app);
-const tradesRef = ref(db, 'trades/');
+const tradesRef = ref(db, 'tradeRecords');
 
 const tradeForm = document.getElementById('tradeForm');
 const tradesTableBody = document.getElementById('tradesTableBody');
 const statusMessage = document.getElementById('statusMessage');
 
-tradeForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
+if (tradeForm && tradesTableBody && statusMessage) {
+  tradeForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
 
-  const formData = new FormData(tradeForm);
-  const tradeData = {
-    stockName: String(formData.get('stockName') || '').trim(),
-    buyPrice: Number(formData.get('buyPrice')),
-    quantity: Number(formData.get('quantity')),
-    stopLoss: Number(formData.get('stopLoss')),
-    target: Number(formData.get('target')),
-    date: String(formData.get('date') || '').trim(),
-  };
+    const formData = new FormData(tradeForm);
+    const recordType = String(formData.get('recordType') || '').trim();
+    const tradeData = {
+      recordType,
+      stockName: String(formData.get('stockName') || '').trim(),
+      buyPrice: Number(formData.get('buyPrice')),
+      quantity: Number(formData.get('quantity')),
+      stopLoss: Number(formData.get('stopLoss')),
+      target: Number(formData.get('target')),
+      date: String(formData.get('date') || '').trim(),
+      journalNote: String(formData.get('journalNote') || '').trim(),
+      soldPrice: Number(formData.get('soldPrice')),
+      holdingDays: Number(formData.get('holdingDays')),
+    };
 
-  await saveTrade(tradeData);
-  tradeForm.reset();
-  await loadTrades();
-});
+    await saveTrade(tradeData);
+    tradeForm.reset();
+    await loadTrades();
+  });
 
-document.addEventListener('DOMContentLoaded', async () => {
-  await loadTrades();
-});
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadTrades();
+  });
+}
 
 function showMessage(message, isError = false) {
   statusMessage.textContent = message;
-  statusMessage.classList.toggle('error', isError);
+  statusMessage.classList.toggle('value-loss', isError);
+  statusMessage.classList.toggle('value-profit', !isError);
 }
 
 function isTradeValid(tradeData) {
-  return (
-    tradeData.stockName &&
-    Number.isFinite(tradeData.buyPrice) &&
-    Number.isFinite(tradeData.quantity) &&
-    Number.isFinite(tradeData.stopLoss) &&
-    Number.isFinite(tradeData.target) &&
-    tradeData.date
+  const baseValid = (
+    tradeData.recordType
+    && tradeData.stockName
+    && Number.isFinite(tradeData.buyPrice)
+    && Number.isFinite(tradeData.quantity)
+    && Number.isFinite(tradeData.stopLoss)
+    && Number.isFinite(tradeData.target)
+    && tradeData.date
   );
+  if (!baseValid) return false;
+
+  if (tradeData.recordType === 'journal' && !tradeData.journalNote) return false;
+  if (tradeData.recordType === 'pasttrades') {
+    return Number.isFinite(tradeData.soldPrice) && Number.isFinite(tradeData.holdingDays);
+  }
+  return true;
 }
 
 export async function saveTrade(tradeData) {
   if (!isTradeValid(tradeData)) {
-    showMessage('Invalid trade data. Please fill all fields correctly.', true);
+    showMessage('Invalid data. Fill all required fields for the selected record type.', true);
     return;
   }
 
   try {
     const newTradeRef = push(tradesRef);
-    await set(newTradeRef, tradeData);
-    showMessage('Trade saved successfully.');
+    await set(newTradeRef, sanitizeTrade(tradeData));
+    showMessage('Record saved to Firebase.');
   } catch (error) {
     console.error('saveTrade error:', error);
-    showMessage('Failed to save trade.', true);
+    showMessage('Failed to save record.', true);
   }
 }
 
@@ -86,10 +102,10 @@ export async function loadTrades() {
     const snapshot = await get(tradesRef);
     const data = snapshot.exists() ? snapshot.val() : {};
     renderTrades(data);
-    showMessage('Trades loaded.');
+    showMessage('Records loaded from Firebase.');
   } catch (error) {
     console.error('loadTrades error:', error);
-    showMessage('Failed to load trades.', true);
+    showMessage('Failed to load records.', true);
   }
 }
 
@@ -97,14 +113,29 @@ export async function deleteTrade(id) {
   if (!id) return;
 
   try {
-    const tradeRef = ref(db, `trades/${id}`);
+    const tradeRef = ref(db, `tradeRecords/${id}`);
     await remove(tradeRef);
-    showMessage('Trade deleted.');
+    showMessage('Record deleted.');
     await loadTrades();
   } catch (error) {
     console.error('deleteTrade error:', error);
-    showMessage('Failed to delete trade.', true);
+    showMessage('Failed to delete record.', true);
   }
+}
+
+function sanitizeTrade(tradeData) {
+  return {
+    recordType: tradeData.recordType,
+    stockName: tradeData.stockName,
+    buyPrice: tradeData.buyPrice,
+    quantity: tradeData.quantity,
+    stopLoss: tradeData.stopLoss,
+    target: tradeData.target,
+    date: tradeData.date,
+    journalNote: tradeData.recordType === 'journal' ? tradeData.journalNote : '',
+    soldPrice: tradeData.recordType === 'pasttrades' ? tradeData.soldPrice : null,
+    holdingDays: tradeData.recordType === 'pasttrades' ? tradeData.holdingDays : null,
+  };
 }
 
 function renderTrades(tradesObject) {
@@ -113,7 +144,7 @@ function renderTrades(tradesObject) {
   const entries = Object.entries(tradesObject);
   if (!entries.length) {
     const row = document.createElement('tr');
-    row.innerHTML = '<td colspan="7">No trades found.</td>';
+    row.innerHTML = '<td colspan="11">No records found.</td>';
     tradesTableBody.appendChild(row);
     return;
   }
@@ -122,12 +153,16 @@ function renderTrades(tradesObject) {
     const row = document.createElement('tr');
 
     row.innerHTML = `
+      <td>${escapeHtml(trade.recordType)}</td>
       <td>${escapeHtml(trade.stockName)}</td>
       <td>${formatNumber(trade.buyPrice)}</td>
       <td>${formatNumber(trade.quantity)}</td>
       <td>${formatNumber(trade.stopLoss)}</td>
       <td>${formatNumber(trade.target)}</td>
       <td>${escapeHtml(trade.date)}</td>
+      <td>${escapeHtml(trade.journalNote || '-')}</td>
+      <td>${trade.soldPrice == null ? '-' : formatNumber(trade.soldPrice)}</td>
+      <td>${trade.holdingDays == null ? '-' : formatNumber(trade.holdingDays)}</td>
       <td><button class="btn-danger" data-id="${id}">Delete</button></td>
     `;
 
