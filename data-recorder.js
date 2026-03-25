@@ -45,7 +45,12 @@
     function saveField(key, value) {
       const state = readState();
       state[pageKey] = state[pageKey] || {};
-      state[pageKey][key] = value;
+      const normalizedValue = typeof value === 'string' ? value.trim() : value;
+      if (normalizedValue === '' || normalizedValue === false) {
+        delete state[pageKey][key];
+      } else {
+        state[pageKey][key] = normalizedValue;
+      }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     }
 
@@ -55,7 +60,7 @@
 
     function isTrackable(el) {
       if (el.closest('[data-no-persist="true"]')) return false;
-      if (el.closest('#addForm, #installmentForm, #manualSipForm, #navForm')) return false;
+      if (!el.matches('[data-persist="true"]')) return false;
       return !el.readOnly
         && !el.disabled
         && !['button', 'submit', 'reset', 'image', 'file', 'hidden'].includes(el.type);

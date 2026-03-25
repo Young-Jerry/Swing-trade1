@@ -214,8 +214,8 @@
           <tr>
             <th>SIP</th>
             <th>Units</th>
-            <th>NAV</th>
-            <th>Amount</th>
+            <th>Avg</th>
+            <th>Invested Amt</th>
           </tr>
         `;
         return Array.from(merged.values())
@@ -242,8 +242,8 @@
           <th>Date</th>
           <th>SIP</th>
           <th>Units</th>
-          <th>NAV</th>
-          <th>Amount</th>
+          <th>Avg</th>
+          <th>Invested Amt</th>
           <th>Actions</th>
         </tr>
       `;
