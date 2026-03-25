@@ -24,7 +24,7 @@
 
   <main class="container">
     <h1>Past Trades Manager</h1>
-    <p class="subtitle">Select type → select record → enter holding days and exit the position.</p>
+    <p class="subtitle">Select type → select record → enter sold price and holding days → exit.</p>
 
     <section class="card section">
       <h3>Exit Position</h3>
@@ -39,6 +39,9 @@
         <label>Select Record
           <select id="exitRecord" required></select>
         </label>
+        <label>Sold Price
+          <input id="soldPrice" type="number" min="0.01" step="0.01" required />
+        </label>
         <label>Holding Days
           <input id="holdingDays" type="number" min="0" step="1" required />
         </label>
@@ -51,7 +54,7 @@
       <div class="table-wrap">
         <table id="exitedTable">
           <thead>
-            <tr><th>Type</th><th>Name</th><th>Profit</th><th>Per Day Profit</th><th>Holding Days</th><th>Actions</th></tr>
+            <tr><th>Type</th><th>Name</th><th>Buy</th><th>Sold</th><th>Profit</th><th>Per Day Profit</th><th>Holding Days</th><th>Actions</th></tr>
           </thead>
           <tbody></tbody>
         </table>
