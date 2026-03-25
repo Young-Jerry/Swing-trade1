@@ -45,7 +45,7 @@
     wrap.innerHTML = `
       <div class="cash-widget-value">
         <span class="cash-widget-label">Cash Balance</span>
-        <strong id="topCashBalance">₨0</strong>
+        <strong id="topCashBalance">₨ 0</strong>
       </div>
       <button type="button" id="topCashEditBtn" class="btn-secondary">Update Cash</button>
     `;
@@ -53,6 +53,20 @@
 
     const btn = wrap.querySelector('#topCashEditBtn');
     btn.addEventListener('click', () => {
+      const entered = prompt('Enter cash balance amount (NPR):', String(readCash()));
+      if (entered === null) return;
+      const parsed = Number.parseFloat(entered);
+      if (!Number.isFinite(parsed)) return;
+      setCash(parsed);
+    });
+
+  }
+
+  function bindDashboardCashEditor() {
+    const dashboardEditBtn = document.getElementById('dashboardCashEditBtn');
+    if (!dashboardEditBtn || dashboardEditBtn.dataset.bound === 'true') return;
+    dashboardEditBtn.dataset.bound = 'true';
+    dashboardEditBtn.addEventListener('click', () => {
       const entered = prompt('Enter cash balance amount (NPR):', String(readCash()));
       if (entered === null) return;
       const parsed = Number.parseFloat(entered);
@@ -82,7 +96,7 @@
   }
 
   function money(value) {
-    return `₨${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(Number(value || 0))}`;
+    return `₨ ${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Math.round(Number(value || 0)))}`;
   }
 
   window.PmsCapital = {
@@ -96,6 +110,7 @@
 
   const ready = () => {
     renderTopWidget();
+    bindDashboardCashEditor();
     updateWidgets();
     window.addEventListener('storage', (event) => {
       if (event.key === CASH_KEY) updateWidgets();

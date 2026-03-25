@@ -16,8 +16,8 @@
         <li><a href="longterm.html">Long Term</a></li>
         <li><a href="mf.html">SIP System</a></li>
         <li><a href="pasttrades.html">Past Trades</a></li>
-        <li><a href="journal.html">book logo</a></li>
-        <li><a href="share_calculator.html">Calculator logo</a></li>
+        <li><a href="journal.html">📚</a></li>
+        <li><a href="share_calculator.html">🧮</a></li>
       </ul>
     </nav>
   </header>
@@ -28,16 +28,19 @@
 
     <section class="card section">
       <div class="summary-grid">
-        <div class="summary-item">Total Invested: <strong id="totalInvested">₨0</strong></div>
-        <div class="summary-item">Total Current Value: <strong id="totalCurrent">₨0</strong></div>
-        <div class="summary-item">Total P/L: <strong id="totalPL">₨0</strong></div>
+        <div class="summary-item">Total Invested: <strong id="totalInvested">₨ 0</strong></div>
+        <div class="summary-item">Total Current Value: <strong id="totalCurrent">₨ 0</strong></div>
+        <div class="summary-item">Total P/L: <strong id="totalPL">₨ 0</strong></div>
       </div>
     </section>
 
     <section class="card section">
       <div class="toolbar">
         <h3>Add Entry</h3>
-        <div class="save-indicator" id="saveIndicator">Saved ✓</div>
+        <div class="toolbar-actions">
+          <button id="massEditBtn" class="btn-secondary" type="button">Mass Edit</button>
+          <div class="save-indicator" id="saveIndicator">Saved ✓</div>
+        </div>
       </div>
       <form id="addForm" class="form-grid" autocomplete="off">
         <label>Script<input data-next type="text" name="script" required /></label>

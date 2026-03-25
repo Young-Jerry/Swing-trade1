@@ -38,8 +38,9 @@
       const unitPrice = side === 'buy' ? buy : sell;
       const tx = math().calculateTransaction(side, unitPrice, qty);
       const buyTx = math().calculateTransaction('buy', buy, qty);
-      const capitalGain = side === 'sell' ? tx.totalPayable - buyTx.totalPayable : 0;
-      const totalReceivable = side === 'sell' ? tx.totalPayable : 0;
+      const grossProfit = side === 'sell' ? tx.totalPayable - buyTx.totalPayable : 0;
+      const capitalGain = side === 'sell' && grossProfit > 0 ? grossProfit * 0.05 : 0;
+      const totalReceivable = side === 'sell' ? tx.totalPayable - capitalGain : 0;
 
       setResults(tx, capitalGain, totalReceivable);
     }
@@ -78,7 +79,7 @@
     }
 
     function money(v) {
-      return `₨${new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v || 0)}`;
+      return `₨ ${new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v || 0)}`;
     }
 
     function fmt(v) {

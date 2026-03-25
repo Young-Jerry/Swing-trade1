@@ -16,8 +16,8 @@
         <li><a href="longterm.html">Long Term</a></li>
         <li><a href="mf.html">SIP System</a></li>
         <li><a href="pasttrades.html">Past Trades</a></li>
-        <li><a href="journal.html">book logo</a></li>
-        <li><a href="share_calculator.html">Calculator logo</a></li>
+        <li><a href="journal.html">📚</a></li>
+        <li><a href="share_calculator.html">🧮</a></li>
       </ul>
     </nav>
   </header>
@@ -30,23 +30,26 @@
     <section class="grid">
       <article class="card stat-card">
         <div class="stat-label">Total Trades Value</div>
-        <div class="stat-value" id="totalTrades">₨0</div>
+        <div class="stat-value" id="totalTrades">₨ 0</div>
       </article>
       <article class="card stat-card">
         <div class="stat-label">Total Value of Long Term</div>
-        <div class="stat-value" id="totalLongTerm">₨0</div>
+        <div class="stat-value" id="totalLongTerm">₨ 0</div>
       </article>
       <article class="card stat-card">
         <div class="stat-label">Total SIP Investment</div>
-        <div class="stat-value" id="totalMF">₨0</div>
+        <div class="stat-value" id="totalMF">₨ 0</div>
       </article>
       <article class="card stat-card">
         <div class="stat-label">Portfolio Value (DP Holding)</div>
-        <div class="stat-value" id="combinedTotal">₨0</div>
+        <div class="stat-value" id="combinedTotal">₨ 0</div>
       </article>
       <article class="card stat-card">
         <div class="stat-label">Cash Balance</div>
-        <div class="stat-value" id="dashboardCashBalance">₨0</div>
+        <div class="stat-value stat-value-with-action">
+          <span id="dashboardCashBalance">₨ 0</span>
+          <button id="dashboardCashEditBtn" class="icon-btn" type="button" aria-label="Edit cash balance">✏️</button>
+        </div>
       </article>
     </section>
 
@@ -84,8 +87,7 @@
       <div class="profit-header">
         <div class="profit-stat">
           <h4>Profit / Loss</h4>
-          <div class="metric"><span id="profitValue" class="value-profit">₨0</span></div>
-          <div class="metric"><span>Total Invested</span><span id="totalInvested">₨0</span></div>
+          <div class="metric"><span id="profitValue" class="value-profit">₨ 0</span></div>
         </div>
         <div class="profit-stat">
           <h4>Trade Outcome</h4>

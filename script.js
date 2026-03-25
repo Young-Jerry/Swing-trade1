@@ -1,11 +1,10 @@
 (() => {
   let booted = false;
+  const colors = ['#f4b942', '#2ac07e', '#4e89ff'];
 
   const boot = () => {
     if (booted) return;
     booted = true;
-    const EXITED_KEY = 'exitedTradesV2';
-    const colors = ['#f4b942', '#2ac07e', '#4e89ff'];
     const keys = [
       { id: 'trades', label: 'Trades', node: 'totalTrades', total: tradeLikeTotal },
       { id: 'longterm', label: 'Long Term', node: 'totalLongTerm', total: tradeLikeTotal },
@@ -87,12 +86,16 @@
 
   function restorePortfolioSnapshot(payload) {
     const backup = payload && typeof payload === 'object' ? payload : null;
-    if (!backup || backup.format !== 'pms-local-backup-v1' || !backup.data || typeof backup.data !== 'object') {
-      throw new Error('Unexpected backup format');
-    }
+    if (!backup) throw new Error('Unexpected backup format');
+
+    const data = backup.format === 'pms-local-backup-v1' ? backup.data : backup;
+    if (!data || typeof data !== 'object') throw new Error('Unexpected backup format');
+
+    const entries = Object.entries(data).filter(([key, value]) => typeof key === 'string' && typeof value === 'string');
+    if (!entries.length) throw new Error('No restorable data in file');
+
     localStorage.clear();
-    Object.entries(backup.data).forEach(([key, value]) => {
-      if (typeof key !== 'string' || typeof value !== 'string') return;
+    entries.forEach(([key, value]) => {
       localStorage.setItem(key, value);
     });
   }
@@ -111,14 +114,12 @@
   function renderProfitPanel() {
     const rows = JSON.parse(localStorage.getItem('exitedTradesV2') || '[]');
     const totalProfit = rows.reduce((sum, row) => sum + exactProfit(row), 0);
-    const totalInvested = rows.reduce((sum, row) => sum + exactInvested(row), 0);
     const wins = rows.filter((row) => exactProfit(row) > 0).length;
     const losses = rows.filter((row) => exactProfit(row) < 0).length;
 
     const profitNode = document.getElementById('profitValue');
     profitNode.textContent = currency(totalProfit);
     profitNode.className = totalProfit >= 0 ? 'value-profit' : 'value-loss';
-    document.getElementById('totalInvested').textContent = currency(totalInvested);
     document.getElementById('winCount').textContent = String(wins);
     document.getElementById('lossCount').textContent = String(losses);
 
@@ -142,19 +143,14 @@
     const pad = { left: 20, right: 20, top: 16, bottom: 20 };
     const plotW = canvas.width - pad.left - pad.right;
     const plotH = canvas.height - pad.top - pad.bottom;
-    const signedLog = (value) => {
-      const n = Number(value || 0);
-      if (!Number.isFinite(n) || n === 0) return 0;
-      return Math.sign(n) * Math.log10(1 + Math.abs(n));
-    };
-
-    const rawMin = Math.min(0, ...points.map((p) => p.total));
-    const transformed = points.map((p) => signedLog(p.total));
-    const minY = Math.min(...transformed, signedLog(0));
-    const maxY = Math.max(...transformed, signedLog(1));
+    const rawMin = Math.min(...points.map((p) => p.total), 0);
+    const rawMax = Math.max(...points.map((p) => p.total), 0);
+    const padY = Math.max((rawMax - rawMin) * 0.12, 100);
+    const minY = rawMin - padY;
+    const maxY = rawMax + padY;
     const yRange = maxY - minY || 1;
     const toX = (i) => pad.left + (i / Math.max(points.length - 1, 1)) * plotW;
-    const toY = (v) => pad.top + (1 - ((signedLog(v) - minY) / yRange)) * plotH;
+    const toY = (v) => pad.top + (1 - ((v - minY) / yRange)) * plotH;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#0f1d2e';
@@ -172,8 +168,8 @@
     ctx.lineWidth = 3;
     ctx.stroke();
 
-    ctx.lineTo(toX(points.length - 1), toY(rawMin));
-    ctx.lineTo(toX(0), toY(rawMin));
+    ctx.lineTo(toX(points.length - 1), toY(0));
+    ctx.lineTo(toX(0), toY(0));
     ctx.closePath();
     ctx.fillStyle = points[points.length - 1].total >= 0 ? 'rgba(0, 229, 64, 0.2)' : 'rgba(234, 90, 90, 0.2)';
     ctx.fill();
@@ -193,7 +189,7 @@
       const idx = Math.max(0, Math.min(points.length - 1, Math.round((relX / plotW) * (points.length - 1))));
       const point = points[idx];
       tooltip.textContent = idx === 0
-        ? 'Start: ₨0'
+        ? 'Start: ₨ 0'
         : `Trade ${idx}: Total Profit ${currency(point.total)}`;
       tooltip.style.display = 'block';
       tooltip.style.left = `${e.pageX + 10}px`;
@@ -260,15 +256,19 @@
       tooltip.style.display = 'block';
       tooltip.style.left = `${e.pageX + 10}px`;
       tooltip.style.top = `${e.pageY + 10}px`;
+      pie.style.transform = `scale(1.06) rotate(${(normalized - 180) * 0.02}deg)`;
+      pie.style.boxShadow = '0 14px 30px rgba(0,0,0,.42)';
     });
 
     pie.addEventListener('mouseleave', () => {
       tooltip.style.display = 'none';
+      pie.style.transform = '';
+      pie.style.boxShadow = '';
     });
   }
 
   function currency(value) {
-    return `₨${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(value)}`;
+    return `₨ ${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(value)}`;
   }
 
   const ready = window.__pmsDataReady;

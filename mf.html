@@ -16,8 +16,8 @@
         <li><a href="longterm.html">Long Term</a></li>
         <li><a class="active" href="mf.html">SIP System</a></li>
         <li><a href="pasttrades.html">Past Trades</a></li>
-        <li><a href="journal.html">book logo</a></li>
-        <li><a href="share_calculator.html">Calculator logo</a></li>
+        <li><a href="journal.html">📚</a></li>
+        <li><a href="share_calculator.html">🧮</a></li>
       </ul>
     </nav>
   </header>
@@ -48,17 +48,6 @@
     </section>
 
     <section class="card section">
-      <h3>Add Manual SIP</h3>
-      <form id="manualSipForm" class="form-grid" autocomplete="off">
-        <label>New SIP Name
-          <input name="newSipName" type="text" placeholder="Example: NABIL" required />
-        </label>
-        <button class="btn-primary" type="submit">Add Manual SIP</button>
-        <button class="btn-danger" type="button" id="deleteSipBtn">🗑️</button>
-      </form>
-    </section>
-
-    <section class="card section">
       <h3>Installment</h3>
       <form id="installmentForm" class="form-grid" autocomplete="off">
         <label>SIP<select name="sipName" required></select></label>
@@ -84,13 +73,24 @@
             <tr>
               <th>SIP</th>
               <th>Units</th>
-              <th>NAV</th>
-              <th>Amount</th>
+              <th>Avg</th>
+              <th>Invested Amt</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
       </div>
+    </section>
+
+    <section class="card section">
+      <h3>Add Manual SIP</h3>
+      <form id="manualSipForm" class="form-grid" autocomplete="off">
+        <label>New SIP Name
+          <input name="newSipName" type="text" placeholder="Example: NABIL" required />
+        </label>
+        <button class="btn-primary" type="submit">Add Manual SIP</button>
+        <button class="btn-danger" type="button" id="deleteSipBtn">🗑️</button>
+      </form>
     </section>
   </main>
 

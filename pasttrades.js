@@ -44,7 +44,10 @@
           soldPrice,
           qty: record.qty,
         });
-        const profit = roundTrip.profit;
+        const grossProfit = roundTrip.profit;
+        const capitalGainTax = grossProfit > 0 ? grossProfit * 0.05 : 0;
+        const netRealizedAmount = roundTrip.realizedAmount - capitalGainTax;
+        const profit = grossProfit - capitalGainTax;
         const perDayProfit = holdingDays > 0 ? profit / holdingDays : profit;
 
         const exited = readJson(EXITED_KEY);
@@ -56,14 +59,16 @@
           buyPrice: record.buyPrice,
           soldPrice,
           buyTotal: roundTrip.invested,
-          soldTotal: roundTrip.realizedAmount,
+          soldTotal: netRealizedAmount,
+          grossProfit,
+          capitalGainTax,
           profit,
           perDayProfit,
           holdingDays,
         });
 
         localStorage.setItem(EXITED_KEY, JSON.stringify(exited));
-        if (window.PmsCapital) window.PmsCapital.adjustCash(roundTrip.realizedAmount);
+        if (window.PmsCapital) window.PmsCapital.adjustCash(netRealizedAmount);
         removeRecord(record);
         soldPriceInput.value = '';
         holdingDaysInput.value = '';
@@ -133,7 +138,7 @@
       if (!Number.isFinite(parsed) || parsed < 0) return;
 
       row.holdingDays = parsed;
-      row.perDayProfit = parsed > 0 ? row.profit / parsed : row.profit;
+      row.perDayProfit = parsed > 0 ? Number(row.profit || 0) / parsed : Number(row.profit || 0);
       localStorage.setItem(EXITED_KEY, JSON.stringify(exited));
       renderExited();
     }
@@ -231,7 +236,7 @@
     }
 
     function currency(value) {
-      return `₨${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(value || 0)}`;
+      return `₨ ${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(value || 0)}`;
     }
 
     function profitClass(value) {

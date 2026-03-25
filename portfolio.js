@@ -12,6 +12,7 @@
     const tableBody = document.querySelector('#portfolioTable tbody');
     const form = document.getElementById('addForm');
     const indicator = document.getElementById('saveIndicator');
+    const massEditBtn = document.getElementById('massEditBtn');
 
     let sortKey = 'script';
     let sortDir = 1;
@@ -24,6 +25,7 @@
 
     function bindEvents() {
       form.addEventListener('submit', onSubmit);
+      if (massEditBtn) massEditBtn.addEventListener('click', openMassEditModal);
       document.querySelectorAll('th[data-sort]').forEach((th) => {
         if (th.dataset.sort === 'actions') return;
         th.addEventListener('click', () => {
@@ -257,6 +259,82 @@
       plNode.className = plClass(pl);
     }
 
+    function openMassEditModal() {
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.innerHTML = `
+        <div class="card modal-card mass-edit-modal-card" role="dialog" aria-modal="true" aria-label="Mass edit portfolio">
+          <div class="toolbar">
+            <h3>Mass Edit ${pageRoot.dataset.portfolioTitle || 'Portfolio'}</h3>
+            <button type="button" class="btn-danger" data-close-modal>Close</button>
+          </div>
+          <p class="subtitle">Edit multiple rows quickly and save once. Sector is intentionally hidden here.</p>
+          <div class="table-wrap mass-edit-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Script</th>
+                  <th>Qty</th>
+                  <th>LTP</th>
+                  ${showRanges ? '<th>L.R / H.R</th>' : ''}
+                  <th>WACC</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.map((row) => `
+                  <tr data-id="${row.id}">
+                    <td><input class="inline-edit" data-field="script" type="text" value="${escapeHtml(row.script)}"></td>
+                    <td><input class="inline-edit" data-field="qty" type="number" min="0" step="1" value="${fmt(row.qty)}"></td>
+                    <td><input class="inline-edit" data-field="ltp" type="number" min="0" step="0.01" value="${fmt(row.ltp)}"></td>
+                    ${showRanges ? `<td><input class="inline-edit" data-field="sell1" type="number" min="0" step="0.01" value="${fmt2(row.sell1)}"></td>` : ''}
+                    <td><input class="inline-edit" data-field="wacc" type="number" min="0" step="0.01" value="${fmt(row.wacc)}"></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+          <div class="toolbar">
+            <button type="button" class="btn-primary" data-save-mass>Edit All Rows</button>
+          </div>
+        </div>
+      `;
+
+      modal.addEventListener('click', (event) => {
+        if (event.target === modal || event.target.closest('[data-close-modal]')) {
+          modal.remove();
+        }
+      });
+
+      modal.querySelector('[data-save-mass]').addEventListener('click', () => {
+        const updatedRows = rows.map((row) => {
+          const tr = modal.querySelector(`tr[data-id="${row.id}"]`);
+          if (!tr) return row;
+          const nextScript = clean(tr.querySelector('[data-field="script"]').value).toUpperCase();
+          const nextQty = Math.floor(num(tr.querySelector('[data-field="qty"]').value));
+          const nextLtp = num(tr.querySelector('[data-field="ltp"]').value);
+          const nextWacc = num(tr.querySelector('[data-field="wacc"]').value);
+          const nextSell = showRanges ? num(tr.querySelector('[data-field="sell1"]').value) : 0;
+          if (!nextScript || !Number.isFinite(nextQty) || !Number.isFinite(nextLtp) || !Number.isFinite(nextWacc) || (showRanges && !Number.isFinite(nextSell))) {
+            return row;
+          }
+          return {
+            ...row,
+            script: nextScript,
+            qty: nextQty,
+            ltp: nextLtp,
+            wacc: nextWacc,
+            sell1: showRanges ? nextSell : 0,
+            sell2: showRanges ? nextSell * 1.1 : 0,
+          };
+        });
+        rows = updatedRows;
+        persist('Mass edit saved ✓');
+        modal.remove();
+      });
+
+      document.body.appendChild(modal);
+    }
+
     function sorter(a, b) {
       const val = (obj) => {
         switch (sortKey) {
@@ -288,7 +366,7 @@
     }
 
     function currency(value) {
-      return `₨${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(Number(value || 0))}`;
+      return `₨ ${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(Number(value || 0))}`;
     }
 
     function num(v) {
@@ -305,6 +383,15 @@
 
     function clean(v) {
       return String(v || '').trim();
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
     }
 
     function investedCost(price, qty) {
