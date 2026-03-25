@@ -14,6 +14,7 @@
   const deleteSipBtn = document.getElementById('deleteSipBtn');
   const historySipSelect = document.getElementById('historySipSelect');
   const tbody = document.querySelector('#sipTable tbody');
+  const tableHead = document.getElementById('sipTableHead');
   const msg = document.getElementById('sipMessage');
   const currentNavItem = document.getElementById('sipCurrentNavItem');
 
@@ -65,8 +66,9 @@
       if (!sipName || !isValidMonth(month)) return show('Select a valid month.');
       if (!Number.isFinite(units) || !Number.isFinite(nav) || units <= 0 || nav <= 0) return show('Invalid QTY/NAV.');
       if (!isMonthAllowed(sipName, month)) return show(`Month must be on/after ${minimumMonthForSip(sipName)}.`);
+      if (monthExists(sipName, month)) return show('This SIP already has an installment in that month. Delete it from SIP History to reuse the month.');
 
-      addOrMergeEntry(sipName, {
+      addEntry(sipName, {
         id: crypto.randomUUID(),
         date: month15(month),
         units,
@@ -167,14 +169,24 @@
     rows.forEach((row) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${row.date}</td>
+        ${historySip === 'ALL' ? '' : `<td>${row.date}</td>`}
         <td>${row.sipName}</td>
         <td>${fmtUnits(row.units)}</td>
         <td>${fmtNav(row.nav)}</td>
         <td>${currency(row.amount)}</td>
-        <td><button class="btn-danger" data-action="deleteRow" data-sip="${row.sipName}" data-id="${row.id}">Delete</button></td>
+        <td>${historySip === 'ALL'
+          ? `<button class="btn-secondary" data-action="viewSip" data-sip="${row.sipName}">View</button>`
+          : `<button class="btn-danger" data-action="deleteRow" data-sip="${row.sipName}" data-id="${row.id}">Delete</button>`}</td>
       `;
       tbody.appendChild(tr);
+    });
+
+    tbody.querySelectorAll('button[data-action="viewSip"]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        historySip = btn.dataset.sip;
+        historySipSelect.value = historySip;
+        renderHistory();
+      });
     });
 
     tbody.querySelectorAll('button[data-action="deleteRow"]').forEach((btn) => {
@@ -188,37 +200,61 @@
 
     if (!rows.length) {
       const tr = document.createElement('tr');
-      tr.innerHTML = '<td colspan="6">No SIP history found for this selection.</td>';
+      tr.innerHTML = `<td colspan="${historySip === 'ALL' ? 5 : 6}">No SIP history found for this selection.</td>`;
       tbody.appendChild(tr);
     }
   }
 
   function historyRows() {
-    const sipNames = historySip === 'ALL' ? state.sips : [historySip];
-    const merged = new Map();
+    if (historySip === 'ALL') {
+      const merged = new Map();
+      state.sips.forEach((sipName) => {
+        (state.records[sipName] || []).forEach((row) => {
+          const prev = merged.get(sipName) || { id: row.id, sipName, units: 0, amount: 0, date: 'Total' };
+          prev.units += Number(row.units || 0);
+          prev.amount += Number(row.amount || (Number(row.units || 0) * Number(row.nav || 0)));
+          merged.set(sipName, prev);
+        });
+      });
+      tableHead.innerHTML = `
+        <tr>
+          <th>SIP</th>
+          <th>Units</th>
+          <th>NAV</th>
+          <th>Amount</th>
+          <th>Action</th>
+        </tr>
+      `;
+      return Array.from(merged.values())
+        .map((r) => ({ ...r, nav: r.units > 0 ? r.amount / r.units : 0 }))
+        .sort((a, b) => a.sipName.localeCompare(b.sipName));
+    }
 
+    const sipNames = [historySip];
+    const merged = [];
     sipNames.forEach((sipName) => {
       (state.records[sipName] || []).forEach((row) => {
-        const key = `${sipName}__${row.date}`;
-        const prev = merged.get(key) || {
+        merged.push({
           id: row.id,
           date: row.date,
           sipName,
-          units: 0,
-          amount: 0,
-        };
-        prev.units += Number(row.units || 0);
-        prev.amount += Number(row.amount || (Number(row.units || 0) * Number(row.nav || 0)));
-        merged.set(key, prev);
+          units: Number(row.units || 0),
+          amount: Number(row.amount || (Number(row.units || 0) * Number(row.nav || 0))),
+          nav: Number(row.nav || 0),
+        });
       });
     });
-
-    return Array.from(merged.values())
-      .map((r) => ({
-        ...r,
-        nav: r.units > 0 ? r.amount / r.units : 0,
-      }))
-      .sort((a, b) => a.date.localeCompare(b.date) || a.sipName.localeCompare(b.sipName));
+    tableHead.innerHTML = `
+      <tr>
+        <th>Date</th>
+        <th>SIP</th>
+        <th>Units</th>
+        <th>NAV</th>
+        <th>Amount</th>
+        <th>Action</th>
+      </tr>
+    `;
+    return merged.sort((a, b) => a.date.localeCompare(b.date));
   }
 
   function syncInstallmentMinMonth() {
@@ -228,6 +264,9 @@
     monthInput.min = minMonth;
     if (!monthInput.value || monthInput.value < minMonth) {
       monthInput.value = minMonth;
+    }
+    if (monthExists(sip, monthInput.value)) {
+      monthInput.value = nextFreeMonth(sip, monthInput.value);
     }
     syncInstallmentDateDisplay();
   }
@@ -256,7 +295,7 @@
     return `${month}-15`;
   }
 
-  function addOrMergeEntry(sipName, record) {
+  function addEntry(sipName, record) {
     state.records[sipName] = state.records[sipName] || [];
     const sanitized = {
       id: record.id,
@@ -266,19 +305,27 @@
     };
     sanitized.amount = sanitized.units * sanitized.nav;
 
-    const existing = state.records[sipName].find((item) => item.date === sanitized.date);
-    if (existing) {
-      const mergedUnits = Number(existing.units || 0) + sanitized.units;
-      const mergedAmount = Number(existing.amount || (existing.units * existing.nav)) + sanitized.amount;
-      existing.units = mergedUnits;
-      existing.amount = mergedAmount;
-      existing.nav = mergedUnits > 0 ? mergedAmount / mergedUnits : sanitized.nav;
-    } else {
-      state.records[sipName].push(sanitized);
-    }
+    state.records[sipName].push(sanitized);
+    state.records[sipName].sort((a, b) => a.date.localeCompare(b.date));
 
     state.currentNav[sipName] = sanitized.nav;
     activeSip = sipName;
+  }
+
+  function monthExists(sipName, month) {
+    const date = month15(month);
+    return (state.records[sipName] || []).some((row) => row.date === date);
+  }
+
+  function nextFreeMonth(sipName, fromMonth) {
+    const base = `${fromMonth}-01T00:00:00Z`;
+    const cursor = new Date(base);
+    for (let i = 0; i < 120; i += 1) {
+      const month = cursor.toISOString().slice(0, 7);
+      if (!monthExists(sipName, month) && month >= minimumMonthForSip(sipName)) return month;
+      cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+    }
+    return fromMonth;
   }
 
   function latestNav(sipName) {

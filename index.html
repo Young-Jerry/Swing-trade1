@@ -57,6 +57,29 @@
         <ul class="legend" id="allocationLegend"></ul>
       </article>
     </section>
+
+    <section class="card profit-panel">
+      <label class="profit-filter">All
+        <select id="profitRange">
+          <option value="ALL">All</option>
+        </select>
+      </label>
+      <div class="profit-header">
+        <div class="profit-stat">
+          <h4>Profit / Loss</h4>
+          <div class="metric"><span id="profitValue" class="value-profit">₨0</span></div>
+          <div class="metric"><span>Total Invested</span><span id="totalInvested">₨0</span></div>
+        </div>
+        <div class="profit-stat">
+          <h4>Trade Outcome</h4>
+          <div class="metric"><span>WIN (sold in profit)</span><span id="winCount" class="value-profit">0</span></div>
+          <div class="metric"><span>LOSS (sold in loss)</span><span id="lossCount" class="value-loss">0</span></div>
+        </div>
+      </div>
+      <div class="profit-chart-wrap">
+        <canvas id="profitChart" class="profit-chart" width="960" height="260" aria-label="Profit loss history chart"></canvas>
+      </div>
+    </section>
     <footer class="subtitle" style="margin-top:16px; text-align:center;">NEPSE Explained - Sohaum Mainali</footer>
   </main>
 
