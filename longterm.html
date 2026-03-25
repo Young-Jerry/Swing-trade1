@@ -23,8 +23,16 @@
   </header>
 
   <main class="container" data-portfolio-key="longterm" data-portfolio-title="Long Term Portfolio" data-show-ranges="false">
-    <h1>Long Term Portfolio</h1>
-    <p class="subtitle">Manual tracking for long-term holdings with editable values.</p>
+    <section class="page-heading">
+      <div>
+        <h1>Portfolio Management System</h1>
+        <p class="subtitle">Long Term Portfolio</p>
+      </div>
+      <div class="page-heading-actions">
+        <button class="btn-primary" type="button" data-update-ltp-btn>Update LTP</button>
+        <span class="save-indicator" data-update-ltp-status>Ready</span>
+      </div>
+    </section>
 
     <section class="card section">
       <div class="summary-grid">
@@ -75,6 +83,7 @@
   <script defer src="capital-manager.js"></script>
   <script type="module" src="firebase-sync.js"></script>
   <script defer src="data-recorder.js"></script>
+  <script defer src="ltp-updater.js"></script>
   <script defer src="portfolio.js"></script>
 </body>
 </html>

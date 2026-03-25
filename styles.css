@@ -59,6 +59,24 @@ body {
 .nav-links a.active { border-color: var(--accent); background: var(--accent-soft); }
 
 .container { max-width: 1300px; margin: 0 auto; padding: 20px; }
+
+.page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.page-heading h1 {
+  margin-bottom: 4px;
+}
+.page-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 .card {
   background: linear-gradient(180deg, var(--surface) 0%, #101623 100%);
   border: 1px solid var(--border);

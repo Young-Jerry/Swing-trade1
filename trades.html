@@ -23,8 +23,16 @@
   </header>
 
   <main class="container" data-portfolio-key="trades" data-portfolio-title="Trades Portfolio" data-show-ranges="true">
-    <h1>Trades Portfolio</h1>
-    <p class="subtitle">Manual tracking mode: no API fetch, values are fully editable.</p>
+    <section class="page-heading">
+      <div>
+        <h1>Portfolio Management System</h1>
+        <p class="subtitle">Trades Portfolio</p>
+      </div>
+      <div class="page-heading-actions">
+        <button class="btn-primary" type="button" data-update-ltp-btn>Update LTP</button>
+        <span class="save-indicator" data-update-ltp-status>Ready</span>
+      </div>
+    </section>
 
     <section class="card section">
       <div class="summary-grid">
@@ -77,6 +85,7 @@
   <script defer src="capital-manager.js"></script>
   <script type="module" src="firebase-sync.js"></script>
   <script defer src="data-recorder.js"></script>
+  <script defer src="ltp-updater.js"></script>
   <script defer src="portfolio.js"></script>
 </body>
 </html>
