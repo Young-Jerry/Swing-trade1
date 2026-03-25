@@ -174,6 +174,7 @@
     const drawPoint = (i) => ({ x: toX(i), y: toY(points[i].total) });
     const xy = points.map((_, i) => drawPoint(i));
     ctx.beginPath();
+
     ctx.moveTo(xy[0].x, xy[0].y);
     for (let i = 0; i < xy.length - 1; i += 1) {
       const p0 = xy[Math.max(0, i - 1)];
@@ -185,6 +186,10 @@
       const c2x = p2.x - (p3.x - p1.x) / 6;
       const c2y = p2.y - (p3.y - p1.y) / 6;
       ctx.bezierCurveTo(c1x, c1y, c2x, c2y, p2.x, p2.y);
+    ctx.moveTo(first.x, first.y);
+    for (let i = 1; i < points.length; i += 1) {
+      const curr = drawPoint(i);
+      ctx.lineTo(curr.x, curr.y);
     }
     const stroke = points[points.length - 1].total >= 0 ? '#00e540' : '#ea5a5a';
     ctx.strokeStyle = stroke;
@@ -250,12 +255,15 @@
       acc += share;
       return { color: colors[i], start, end: acc, part: p, idx: i };
     });
+
     pie.innerHTML = `
       <svg class="allocation-svg" viewBox="-120 -120 240 240" role="img" aria-label="Allocation pie chart">
         ${segments.map((seg) => piePath(seg)).join('')}
       </svg>
     `;
-    const paths = [...pie.querySelectorAll('path[data-idx]')];
+    const paths = [...pie.querySelectorAll('path[data-idx
+    pie.style.background = `conic-gradient(${segments.map((s) => `${s.color} ${s.start}deg ${s.end}deg`).join(',')})`;
+    pie.style.setProperty('--pie-glow', colors[0]);
 
     legend.innerHTML = '';
     parts.forEach((p, i) => {
@@ -294,7 +302,9 @@
       const insideRadius = dist <= (rect.width / 2);
       const hit = insideRadius ? segments.find((seg) => normalized >= seg.start * 360 && normalized < seg.end * 360) : null;
       if (!hit) return;
+
       activateSegment(hit.idx);
+      pie.style.setProperty('--pie-glow', hit.color);
       const pct = ((hit.part.value / total) * 100).toFixed(2);
       tooltip.textContent = `${hit.part.label}: ${currency(hit.part.value)} (${pct}%)`;
       tooltip.style.display = 'block';
