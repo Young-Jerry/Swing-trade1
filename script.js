@@ -1,30 +1,48 @@
 (() => {
-  let booted = false;
-  const colors = ['#f4b942', '#2ac07e', '#4e89ff'];
+  const COLORS = ['#f4b942', '#2ac07e', '#4e89ff'];
+  const DATA_KEYS = [
+    { id: 'trades', label: 'Trades', node: 'totalTrades', total: tradeLikeTotal },
+    { id: 'longterm', label: 'Long Term', node: 'totalLongTerm', total: tradeLikeTotal },
+    { id: 'sipStateV4', label: 'SIP', node: 'totalSip', total: sipTotal },
+  ];
+
+  let initialized = false;
 
   const boot = () => {
-    if (booted) return;
-    booted = true;
-    const keys = [
-      { id: 'trades', label: 'Trades', node: 'totalTrades', total: tradeLikeTotal },
-      { id: 'longterm', label: 'Long Term', node: 'totalLongTerm', total: tradeLikeTotal },
-      { id: 'sipStateV4', label: 'SIP', node: 'totalSip', total: sipTotal },
-    ];
+    if (initialized) return;
+    initialized = true;
+    bindBackupControls();
+    bindRealtimeRefresh();
+    renderDashboard();
+  };
 
-    const totals = keys.map((k) => ({ ...k, value: k.total(k.id) }));
-    const combined = totals.reduce((s, x) => s + x.value, 0);
-
-    totals.forEach((t) => {
-      const node = document.getElementById(t.node);
-      if (node) node.textContent = currency(t.value);
+  function bindRealtimeRefresh() {
+    window.addEventListener('storage', renderDashboard);
+    window.addEventListener('focus', renderDashboard);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) renderDashboard();
     });
-    document.getElementById('combinedTotal').textContent = currency(combined);
+  }
+
+  function renderDashboard() {
+    const totals = DATA_KEYS.map((key) => ({ ...key, value: key.total(key.id) }));
+    const combined = totals.reduce((sum, row) => sum + row.value, 0);
+
+    totals.forEach((entry) => {
+      const node = document.getElementById(entry.node);
+      if (node) node.textContent = currency(entry.value);
+    });
+
+    const combinedNode = document.getElementById('combinedTotal');
+    if (combinedNode) combinedNode.textContent = currency(combined);
 
     renderPie(totals, combined);
     renderProfitPanel();
-    bindBackupControls();
-    if (window.PmsCapital) window.PmsCapital.updateWidgets();
-  };
+
+    if (window.PmsCapital && typeof window.PmsCapital.updateWidgets === 'function') {
+      window.PmsCapital.updateWidgets();
+    }
+  }
 
   function bindBackupControls() {
     const downloadBtn = document.getElementById('downloadPortfolioBtn');
@@ -38,12 +56,12 @@
         const json = JSON.stringify(snapshot, null, 2);
         const blob = new Blob([json], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `NP ${new Date().toISOString().slice(0, 10)}.json`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `NP ${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
         URL.revokeObjectURL(url);
         statusNode.textContent = 'Backup file downloaded ✓';
       } catch (error) {
@@ -72,11 +90,12 @@
 
   function createPortfolioSnapshot() {
     const data = {};
-    for (let i = 0; i < localStorage.length; i += 1) {
-      const key = localStorage.key(i);
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
       if (!key) continue;
       data[key] = localStorage.getItem(key);
     }
+
     return {
       format: 'pms-local-backup-v1',
       exportedAt: new Date().toISOString(),
@@ -91,27 +110,29 @@
     const data = backup.format === 'pms-local-backup-v1' ? backup.data : backup;
     if (!data || typeof data !== 'object') throw new Error('Unexpected backup format');
 
-    const entries = Object.entries(data).filter(([key, value]) => typeof key === 'string' && typeof value === 'string');
+    const entries = Object.entries(data)
+      .filter(([key, value]) => typeof key === 'string' && typeof value === 'string');
+
     if (!entries.length) throw new Error('No restorable data in file');
 
     localStorage.clear();
-    entries.forEach(([key, value]) => {
-      localStorage.setItem(key, value);
-    });
+    entries.forEach(([key, value]) => localStorage.setItem(key, value));
   }
 
   function tradeLikeTotal(key) {
-    const rows = JSON.parse(localStorage.getItem(key) || '[]');
-    return rows.reduce((s, r) => s + (Number(r.ltp || 0) * Number(r.qty || 0)), 0);
+    const rows = safeJson(localStorage.getItem(key), []);
+    return rows.reduce((sum, row) => sum + Number(row.ltp || 0) * Number(row.qty || 0), 0);
   }
 
-  function sipTotal(key) {
-    const state = JSON.parse(
-      localStorage.getItem(key)
+  function sipTotal() {
+    const state = safeJson(
+      localStorage.getItem('sipStateV4')
       || localStorage.getItem('sipStateV3')
       || localStorage.getItem('sipStateV2')
       || '{}',
+      {},
     );
+
     const currentNav = state.currentNav || {};
     const records = Object.entries(state.records || {});
     return records.reduce((sum, [sipName, list]) => {
@@ -119,32 +140,69 @@
       const units = rows.reduce((u, row) => u + Number(row.units || 0), 0);
       const lastNav = Number(rows[rows.length - 1]?.nav || 0);
       const nav = Number(currentNav[sipName] || lastNav || 0);
-      if (nav > 0 && units > 0) return sum + (units * nav);
+      if (nav > 0 && units > 0) return sum + units * nav;
       return sum + rows.reduce((s, row) => s + Number(row.amount || (Number(row.units || 0) * Number(row.nav || 0))), 0);
     }, 0);
   }
 
   function renderProfitPanel() {
-    const rows = JSON.parse(localStorage.getItem('exitedTradesV2') || '[]');
-    const totalProfit = rows.reduce((sum, row) => sum + exactProfit(row), 0);
-    const wins = rows.filter((row) => exactProfit(row) > 0).length;
-    const losses = rows.filter((row) => exactProfit(row) < 0).length;
+    const rows = safeJson(localStorage.getItem('exitedTradesV2'), []);
+    const rangeSelect = document.getElementById('profitRange');
+
+    if (rangeSelect) {
+      fillProfitRanges(rangeSelect, rows);
+    }
+
+    const selected = rangeSelect ? Number(rangeSelect.value || rows.length || 0) : rows.length;
+    const filtered = selected > 0 ? rows.slice(-selected) : rows;
+
+    const totalProfit = filtered.reduce((sum, row) => sum + exactProfit(row), 0);
+    const wins = filtered.filter((row) => exactProfit(row) > 0).length;
+    const losses = filtered.filter((row) => exactProfit(row) < 0).length;
 
     const profitNode = document.getElementById('profitValue');
-    profitNode.textContent = currency(totalProfit);
-    profitNode.className = totalProfit >= 0 ? 'value-profit' : 'value-loss';
-    document.getElementById('winCount').textContent = String(wins);
-    document.getElementById('lossCount').textContent = String(losses);
+    if (profitNode) {
+      profitNode.textContent = currency(totalProfit);
+      profitNode.className = totalProfit >= 0 ? 'value-profit' : 'value-loss';
+    }
 
-    drawProfitChart(rows);
+    const winNode = document.getElementById('winCount');
+    if (winNode) winNode.textContent = String(wins);
+    const lossNode = document.getElementById('lossCount');
+    if (lossNode) lossNode.textContent = String(losses);
+
+    drawProfitChart(filtered);
+  }
+
+  function fillProfitRanges(selectNode, rows) {
+    const options = [
+      { label: 'All', value: rows.length || 0 },
+      { label: 'Last 7 trades', value: 7 },
+      { label: 'Last 30 trades', value: 30 },
+    ];
+
+    const previous = Number(selectNode.value || rows.length || 0);
+    selectNode.innerHTML = options
+      .filter((opt, idx) => idx === 0 || rows.length >= opt.value)
+      .map((opt) => `<option value="${opt.value}">${opt.label}</option>`)
+      .join('');
+
+    const values = [...selectNode.options].map((opt) => Number(opt.value));
+    selectNode.value = String(values.includes(previous) ? previous : values[0] || 0);
+
+    if (!selectNode.dataset.bound) {
+      selectNode.addEventListener('change', renderDashboard);
+      selectNode.dataset.bound = '1';
+    }
   }
 
   function drawProfitChart(rows) {
     const canvas = document.getElementById('profitChart');
     const tooltip = document.getElementById('chartTooltip');
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+
+    const context = canvas.getContext('2d');
+    if (!context) return;
 
     const points = [{ index: 0, total: 0 }];
     let cumulative = 0;
@@ -153,80 +211,177 @@
       points.push({ index: index + 1, total: cumulative });
     });
 
-    const pad = { left: 20, right: 20, top: 16, bottom: 20 };
-    const plotW = canvas.width - pad.left - pad.right;
-    const plotH = canvas.height - pad.top - pad.bottom;
-    const values = points.map((p) => p.total);
+    const padding = { left: 20, right: 20, top: 16, bottom: 20 };
+    const plotWidth = canvas.width - padding.left - padding.right;
+    const plotHeight = canvas.height - padding.top - padding.bottom;
+    const values = points.map((point) => point.total);
     const minY = Math.min(0, ...values);
     const maxY = Math.max(0, ...values);
-    const spread = (maxY - minY) || 1;
-    const yPad = spread * 0.08;
-    const yMinPadded = minY - yPad;
-    const yMaxPadded = maxY + yPad;
-    const yRange = (yMaxPadded - yMinPadded) || 1;
-    const toX = (i) => pad.left + (i / Math.max(points.length - 1, 1)) * plotW;
-    const toY = (v) => pad.top + (1 - ((v - yMinPadded) / yRange)) * plotH;
+    const spread = maxY - minY || 1;
+    const yPadding = spread * 0.08;
+    const minScale = minY - yPadding;
+    const maxScale = maxY + yPadding;
+    const yRange = maxScale - minScale || 1;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#0f1d2e';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    const drawPoint = (i) => ({ x: toX(i), y: toY(points[i].total) });
-    const xy = points.map((_, i) => drawPoint(i));
-    ctx.beginPath();
-
-    ctx.moveTo(xy[0].x, xy[0].y);
-    for (let i = 0; i < xy.length - 1; i += 1) {
-      const p0 = xy[Math.max(0, i - 1)];
-      const p1 = xy[i];
-      const p2 = xy[i + 1];
-      const p3 = xy[Math.min(xy.length - 1, i + 2)];
-      const c1x = p1.x + (p2.x - p0.x) / 6;
-      const c1y = p1.y + (p2.y - p0.y) / 6;
-      const c2x = p2.x - (p3.x - p1.x) / 6;
-      const c2y = p2.y - (p3.y - p1.y) / 6;
-      ctx.bezierCurveTo(c1x, c1y, c2x, c2y, p2.x, p2.y);
-    ctx.moveTo(first.x, first.y);
-    for (let i = 1; i < points.length; i += 1) {
-      const curr = drawPoint(i);
-      ctx.lineTo(curr.x, curr.y);
-    }
+    const toX = (index) => padding.left + (index / Math.max(points.length - 1, 1)) * plotWidth;
+    const toY = (value) => padding.top + (1 - (value - minScale) / yRange) * plotHeight;
     const stroke = points[points.length - 1].total >= 0 ? '#00e540' : '#ea5a5a';
-    ctx.strokeStyle = stroke;
-    ctx.lineWidth = 3;
-    ctx.stroke();
+
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = '#0f1d2e';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    context.beginPath();
+    context.moveTo(toX(0), toY(points[0].total));
+    for (let i = 1; i < points.length; i += 1) {
+      context.lineTo(toX(i), toY(points[i].total));
+    }
+    context.strokeStyle = stroke;
+    context.lineWidth = 3;
+    context.stroke();
 
     const baseline = toY(0);
-    ctx.lineTo(toX(points.length - 1), baseline);
-    ctx.lineTo(toX(0), baseline)
-    ctx.closePath();
-    ctx.fillStyle = points[points.length - 1].total >= 0 ? 'rgba(0, 229, 64, 0.2)' : 'rgba(234, 90, 90, 0.2)';
-    ctx.fill();
+    context.lineTo(toX(points.length - 1), baseline);
+    context.lineTo(toX(0), baseline);
+    context.closePath();
+    context.fillStyle = points[points.length - 1].total >= 0 ? 'rgba(0, 229, 64, 0.2)' : 'rgba(234, 90, 90, 0.2)';
+    context.fill();
 
-    points.forEach((p, i) => {
-      const x = toX(i);
-      const y = toY(p.total);
-      ctx.beginPath();
-      ctx.arc(x, y, i === points.length - 1 ? 4.5 : 2.8, 0, Math.PI * 2);
-      ctx.fillStyle = i === points.length - 1 ? '#ffffff' : stroke;
-      ctx.fill();
+    points.forEach((point, index) => {
+      context.beginPath();
+      context.arc(toX(index), toY(point.total), index === points.length - 1 ? 4.5 : 2.8, 0, Math.PI * 2);
+      context.fillStyle = index === points.length - 1 ? '#ffffff' : stroke;
+      context.fill();
     });
 
-    canvas.onmousemove = (e) => {
+    if (!tooltip) return;
+
+    canvas.onmousemove = (event) => {
       const rect = canvas.getBoundingClientRect();
-      const relX = e.clientX - rect.left - pad.left;
-      const idx = Math.max(0, Math.min(points.length - 1, Math.round((relX / plotW) * (points.length - 1))));
-      const point = points[idx];
-      tooltip.textContent = idx === 0
-        ? 'Start: Rs 0'
-        : `Trade ${idx}: Total Profit ${currency(point.total)}`;
+      const relativeX = event.clientX - rect.left - padding.left;
+      const index = Math.max(0, Math.min(points.length - 1, Math.round((relativeX / plotWidth) * (points.length - 1))));
+      const point = points[index];
+      tooltip.textContent = index === 0 ? 'Start: Rs 0' : `Trade ${index}: Total Profit ${currency(point.total)}`;
       tooltip.style.display = 'block';
-      tooltip.style.left = `${e.pageX + 10}px`;
-      tooltip.style.top = `${e.pageY + 10}px`;
+      tooltip.style.left = `${event.pageX + 10}px`;
+      tooltip.style.top = `${event.pageY + 10}px`;
     };
+
     canvas.onmouseleave = () => {
       tooltip.style.display = 'none';
     };
+  }
+
+  function renderPie(parts, total) {
+    const pie = document.getElementById('allocationPie');
+    const legend = document.getElementById('allocationLegend');
+    const tooltip = document.getElementById('chartTooltip');
+    if (!pie || !legend) return;
+
+    if (!total) {
+      pie.innerHTML = '<div class="pie-empty">No data</div>';
+      legend.innerHTML = '<li>No holdings available.</li>';
+      return;
+    }
+
+    let cumulative = 0;
+    const segments = parts.map((part, index) => {
+      const share = part.value / total;
+      const start = cumulative;
+      cumulative += share;
+      return {
+        color: COLORS[index],
+        start,
+        end: cumulative,
+        part,
+        idx: index,
+      };
+    });
+
+    pie.innerHTML = `
+      <svg class="allocation-svg" viewBox="-120 -120 240 240" role="img" aria-label="Allocation pie chart">
+        ${segments.map((segment) => piePath(segment)).join('')}
+      </svg>
+    `;
+
+    const paths = [...pie.querySelectorAll('path[data-idx]')];
+    legend.innerHTML = '';
+
+    parts.forEach((part, index) => {
+      const listItem = document.createElement('li');
+      listItem.dataset.idx = String(index);
+      const pct = ((part.value / total) * 100).toFixed(1);
+      listItem.innerHTML = `<span><span class="dot" style="background:${COLORS[index]}"></span>${part.label}</span><strong>${pct}% (${currency(part.value)})</strong>`;
+      legend.appendChild(listItem);
+    });
+
+    const activateSegment = (idx) => {
+      paths.forEach((path) => {
+        const active = Number(path.dataset.idx) === idx;
+        path.classList.toggle('active', active);
+        path.classList.toggle('inactive', !active);
+      });
+      legend.querySelectorAll('li').forEach((item) => {
+        item.classList.toggle('active', Number(item.dataset.idx) === idx);
+      });
+      const hit = segments[idx];
+      if (hit) pie.style.setProperty('--pie-glow', hit.color);
+    };
+
+    const clearActive = () => {
+      paths.forEach((path) => path.classList.remove('active', 'inactive'));
+      legend.querySelectorAll('li').forEach((item) => item.classList.remove('active'));
+      pie.style.setProperty('--pie-glow', COLORS[0]);
+    };
+
+    pie.onmousemove = (event) => {
+      if (!tooltip) return;
+      const rect = pie.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const angleRad = Math.atan2(event.clientY - centerY, event.clientX - centerX);
+      const distance = Math.sqrt((event.clientX - centerX) ** 2 + (event.clientY - centerY) ** 2);
+      const normalized = ((angleRad * 180) / Math.PI + 450) % 360;
+      const inside = distance <= rect.width / 2;
+      const hit = inside
+        ? segments.find((segment) => normalized >= segment.start * 360 && normalized < segment.end * 360)
+        : null;
+
+      if (!hit) {
+        tooltip.style.display = 'none';
+        clearActive();
+        return;
+      }
+
+      activateSegment(hit.idx);
+      const pct = ((hit.part.value / total) * 100).toFixed(2);
+      tooltip.textContent = `${hit.part.label}: ${currency(hit.part.value)} (${pct}%)`;
+      tooltip.style.display = 'block';
+      tooltip.style.left = `${event.pageX + 10}px`;
+      tooltip.style.top = `${event.pageY + 10}px`;
+    };
+
+    legend.querySelectorAll('li').forEach((item) => {
+      item.addEventListener('mouseenter', () => activateSegment(Number(item.dataset.idx)));
+      item.addEventListener('mouseleave', clearActive);
+    });
+
+    pie.onmouseleave = () => {
+      clearActive();
+      if (tooltip) tooltip.style.display = 'none';
+    };
+  }
+
+  function piePath(segment) {
+    const startAngle = segment.start * Math.PI * 2 - Math.PI / 2;
+    const endAngle = segment.end * Math.PI * 2 - Math.PI / 2;
+    const radius = 100;
+    const x1 = Math.cos(startAngle) * radius;
+    const y1 = Math.sin(startAngle) * radius;
+    const x2 = Math.cos(endAngle) * radius;
+    const y2 = Math.sin(endAngle) * radius;
+    const largeArc = segment.end - segment.start > 0.5 ? 1 : 0;
+    return `<path data-idx="${segment.idx}" d="M 0 0 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z" fill="${segment.color}" />`;
   }
 
   function exactProfit(row) {
@@ -238,105 +393,17 @@
     return gross > 0 ? gross * 0.95 : gross;
   }
 
-  function renderPie(parts, total) {
-    const pie = document.getElementById('allocationPie');
-    const legend = document.getElementById('allocationLegend');
-    const tooltip = document.getElementById('chartTooltip');
-    if (!total) {
-      pie.innerHTML = '<div class="pie-empty">No data</div>';
-      legend.innerHTML = '<li>No holdings available.</li>';
-      return;
+  function safeJson(raw, fallback) {
+    try {
+      const parsed = JSON.parse(raw || 'null');
+      return parsed ?? fallback;
+    } catch {
+      return fallback;
     }
-
-    let acc = 0;
-    const segments = parts.map((p, i) => {
-      const share = p.value / total;
-      const start = acc;
-      acc += share;
-      return { color: colors[i], start, end: acc, part: p, idx: i };
-    });
-
-    pie.innerHTML = `
-      <svg class="allocation-svg" viewBox="-120 -120 240 240" role="img" aria-label="Allocation pie chart">
-        ${segments.map((seg) => piePath(seg)).join('')}
-      </svg>
-    `;
-    const paths = [...pie.querySelectorAll('path[data-idx
-    pie.style.background = `conic-gradient(${segments.map((s) => `${s.color} ${s.start}deg ${s.end}deg`).join(',')})`;
-    pie.style.setProperty('--pie-glow', colors[0]);
-
-    legend.innerHTML = '';
-    parts.forEach((p, i) => {
-      const li = document.createElement('li');
-      li.dataset.idx = String(i);
-      const pct = ((p.value / total) * 100).toFixed(1);
-      li.innerHTML = `<span><span class="dot" style="background:${colors[i]}"></span>${p.label}</span><strong>${pct}% (${currency(p.value)})</strong>`;
-      legend.appendChild(li);
-    });
-
-    const activateSegment = (idx) => {
-      paths.forEach((path) => {
-        const active = Number(path.dataset.idx) === idx;
-        path.classList.toggle('active', active);
-        path.classList.toggle('inactive', !active);
-      });
-      legend.querySelectorAll('li').forEach((li) => {
-        li.classList.toggle('active', Number(li.dataset.idx) === idx);
-      });
-      const hit = segments[idx];
-      if (hit) pie.style.setProperty('--pie-glow', hit.color);
-    };
-    const clearActive = () => {
-      paths.forEach((path) => path.classList.remove('active', 'inactive'));
-      legend.querySelectorAll('li').forEach((li) => li.classList.remove('active'));
-      pie.style.setProperty('--pie-glow', colors[0]);
-    };
-
-    pie.addEventListener('mousemove', (e) => {
-      const rect = pie.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      const angleRad = Math.atan2(e.clientY - cy, e.clientX - cx);
-      const dist = Math.sqrt((e.clientX - cx) ** 2 + (e.clientY - cy) ** 2);
-      const normalized = ((angleRad * 180) / Math.PI + 450) % 360;
-      const insideRadius = dist <= (rect.width / 2);
-      const hit = insideRadius ? segments.find((seg) => normalized >= seg.start * 360 && normalized < seg.end * 360) : null;
-      if (!hit) return;
-
-      activateSegment(hit.idx);
-      pie.style.setProperty('--pie-glow', hit.color);
-      const pct = ((hit.part.value / total) * 100).toFixed(2);
-      tooltip.textContent = `${hit.part.label}: ${currency(hit.part.value)} (${pct}%)`;
-      tooltip.style.display = 'block';
-      tooltip.style.left = `${e.pageX + 10}px`;
-      tooltip.style.top = `${e.pageY + 10}px`;
-    });
-
-    legend.querySelectorAll('li').forEach((li) => {
-      li.addEventListener('mouseenter', () => activateSegment(Number(li.dataset.idx)));
-      li.addEventListener('mouseleave', clearActive);
-    });
-
-    pie.addEventListener('mouseleave', () => {
-      clearActive();
-      tooltip.style.display = 'none';
-    });
-  }
-
-  function piePath(segment) {
-    const startAngle = segment.start * Math.PI * 2 - (Math.PI / 2);
-    const endAngle = segment.end * Math.PI * 2 - (Math.PI / 2);
-    const r = 100;
-    const x1 = Math.cos(startAngle) * r;
-    const y1 = Math.sin(startAngle) * r;
-    const x2 = Math.cos(endAngle) * r;
-    const y2 = Math.sin(endAngle) * r;
-    const largeArc = segment.end - segment.start > 0.5 ? 1 : 0;
-    return `<path data-idx="${segment.idx}" d="M 0 0 L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z" fill="${segment.color}" />`;
   }
 
   function currency(value) {
-    return `Rs ${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(value)}`;
+    return `Rs ${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(value || 0)}`;
   }
 
   const ready = window.__pmsDataReady;
