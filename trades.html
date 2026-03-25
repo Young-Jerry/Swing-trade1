@@ -14,8 +14,7 @@
         <li><a href="index.html">Dashboard</a></li>
         <li><a class="active" href="trades.html">Trades</a></li>
         <li><a href="longterm.html">Long Term</a></li>
-        <li><a href="mf.html">SIP System</a></li>
-        <li><a href="pasttrades.html">Past Trades</a></li>
+                <li><a href="pasttrades.html">Past Trades</a></li>
         <li><a href="journal.html">📚</a></li>
         <li><a href="share_calculator.html">🧮</a></li>
       </ul>
@@ -28,21 +27,23 @@
 
     <section class="card section">
       <div class="summary-grid">
-        <div class="summary-item">Total Invested: <strong id="totalInvested">₨0</strong></div>
-        <div class="summary-item">Total Current Value: <strong id="totalCurrent">₨0</strong></div>
-        <div class="summary-item">Total P/L: <strong id="totalPL">₨0</strong></div>
+        <div class="summary-item">Total Invested: <strong id="totalInvested">Rs 0</strong></div>
+        <div class="summary-item">Total Current Value: <strong id="totalCurrent">Rs 0</strong></div>
+        <div class="summary-item">Total P/L: <strong id="totalPL">Rs 0</strong></div>
       </div>
     </section>
 
     <section class="card section">
       <div class="toolbar">
         <h3>Add Entry</h3>
-        <div class="save-indicator" id="saveIndicator">Saved ✓</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button id="massEditBtn" class="btn-secondary" type="button">Mass Edit</button>
+          <div class="save-indicator" id="saveIndicator">Saved ✓</div>
+        </div>
       </div>
       <form id="addForm" class="form-grid" autocomplete="off">
         <label>Script<input data-next type="text" name="script" required /></label>
-        <label>Sector<input data-next type="text" name="sector" required /></label>
-        <label>Qty<input data-next type="number" name="qty" min="0" step="1" required /></label>
+                <label>Qty<input data-next type="number" name="qty" min="0" step="1" required /></label>
         <label>LTP<input data-next type="number" name="ltp" min="0" step="0.01" required /></label>
         <label>WACC<input data-next type="number" name="wacc" min="0" step="0.01" required /></label>
         <label>L.R<input data-next type="number" name="sell1" min="0" step="0.01" required /></label>
@@ -56,8 +57,7 @@
           <thead>
             <tr>
               <th data-sort="script">Script</th>
-              <th data-sort="sector">Sector</th>
-              <th data-sort="qty">Qty</th>
+                            <th data-sort="qty">Qty</th>
               <th data-sort="ltp">LTP</th>
               <th data-sort="sell1">L.R / H.R</th>
               <th data-sort="current">Current Value</th>

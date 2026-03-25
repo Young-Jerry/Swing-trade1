@@ -38,12 +38,19 @@
   function calculateRoundTrip({ buyPrice, soldPrice, qty }) {
     const buy = calculateTransaction('buy', buyPrice, qty);
     const sell = calculateTransaction('sell', soldPrice, qty);
+    const grossProfit = sell.totalPayable - buy.totalPayable;
+    const capitalGainTax = grossProfit > 0 ? grossProfit * 0.05 : 0;
+    const netProfit = grossProfit - capitalGainTax;
     return {
       buy,
       sell,
       invested: buy.totalPayable,
       realizedAmount: sell.totalPayable,
-      profit: sell.totalPayable - buy.totalPayable,
+      netRealizedAmount: sell.totalPayable - capitalGainTax,
+      grossProfit,
+      capitalGainTax,
+      profit: netProfit,
+      netProfit,
     };
   }
 

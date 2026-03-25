@@ -79,7 +79,7 @@
     }
 
     function money(v) {
-      return `₨${new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v || 0)}`;
+      return `Rs ${new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v || 0)}`;
     }
 
     function fmt(v) {

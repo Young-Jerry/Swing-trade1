@@ -36,6 +36,9 @@
           render();
         });
       });
+      const massBtn = document.getElementById('massEditBtn');
+      if (massBtn) massBtn.addEventListener('click', openMassEdit);
+
     }
 
     function clearEntryForm() {
@@ -56,7 +59,6 @@
       const record = {
         id: crypto.randomUUID(),
         script: clean(fd.get('script')).toUpperCase(),
-        sector: clean(fd.get('sector')),
         ltp: num(fd.get('ltp')),
         qty: num(fd.get('qty')),
         wacc: num(fd.get('wacc')),
@@ -65,7 +67,7 @@
       };
 
       const baseFields = [record.ltp, record.qty, record.wacc];
-      if (!record.script || !record.sector || baseFields.some((n) => !Number.isFinite(n)) || (showRanges && !Number.isFinite(record.sell1))) return;
+      if (!record.script || baseFields.some((n) => !Number.isFinite(n)) || (showRanges && !Number.isFinite(record.sell1))) return;
 
       rows.push(record);
       const investedAmount = investedCost(record.wacc, record.qty);
@@ -80,7 +82,6 @@
       return raw.map((r) => ({
         id: r.id || crypto.randomUUID(),
         script: clean(r.script).toUpperCase(),
-        sector: clean(r.sector),
         ltp: num(r.ltp) || 0,
         qty: num(r.qty) || 0,
         wacc: num(r.wacc) || 0,
@@ -113,7 +114,6 @@
 
         const tr = document.createElement('tr');
         tr.appendChild(editableCell(row, 'script', row.script, 'text', { transform: 'upper' }));
-        tr.appendChild(editableCell(row, 'sector', row.sector, 'text'));
         tr.appendChild(editableCell(row, 'qty', row.qty, 'number'));
         tr.appendChild(ltpCell(row));
         if (showRanges) {
@@ -245,6 +245,69 @@
       return td;
     }
 
+    function openMassEdit() {
+      const backdrop = document.createElement('div');
+      backdrop.className = 'modal';
+      const card = document.createElement('section');
+      card.className = 'card modal-card mass-edit-modal';
+      card.innerHTML = `
+        <div class="toolbar">
+          <h3>Mass Edit ${pageRoot.dataset.portfolioTitle || ''}</h3>
+          <button type="button" class="btn-danger" data-close="true">Close</button>
+        </div>
+        <p class="subtitle">Edit all rows quickly. Fields shown: Script, Qty, LTP, ${showRanges ? 'L.R/H.R, ' : ''}WACC.</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Script</th><th>Qty</th><th>LTP</th>${showRanges ? '<th>L.R / H.R</th>' : ''}<th>WACC</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="toolbar" style="margin-top:12px;justify-content:flex-end;">
+          <button type="button" class="btn-primary" data-save="true">Save Changes</button>
+        </div>
+      `;
+      backdrop.appendChild(card);
+      document.body.appendChild(backdrop);
+
+      const body = card.querySelector('tbody');
+      rows.forEach((row) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><input data-key="script" data-id="${row.id}" value="${row.script}" /></td>
+          <td><input type="number" min="0" step="1" data-key="qty" data-id="${row.id}" value="${Math.floor(row.qty)}" /></td>
+          <td><input type="number" min="0" step="0.01" data-key="ltp" data-id="${row.id}" value="${fmt2(row.ltp)}" /></td>
+          ${showRanges ? `<td><input type="number" min="0" step="0.01" data-key="sell1" data-id="${row.id}" value="${fmt2(row.sell1)}" /></td>` : ''}
+          <td><input type="number" min="0" step="0.01" data-key="wacc" data-id="${row.id}" value="${fmt2(row.wacc)}" /></td>
+        `;
+        body.appendChild(tr);
+      });
+
+      card.querySelector('[data-close="true"]').addEventListener('click', () => backdrop.remove());
+      backdrop.addEventListener('click', (e) => { if (e.target === backdrop) backdrop.remove(); });
+      card.querySelector('[data-save="true"]').addEventListener('click', () => {
+        const drafts = [...card.querySelectorAll('input[data-id]')];
+        drafts.forEach((input) => {
+          const row = rows.find((r) => r.id === input.dataset.id);
+          if (!row) return;
+          const key = input.dataset.key;
+          if (key === 'script') row.script = clean(input.value).toUpperCase();
+          else if (key === 'qty') row.qty = Math.max(0, Math.floor(num(input.value) || 0));
+          else if (key === 'ltp') row.ltp = Math.max(0, num(input.value) || 0);
+          else if (key === 'wacc') row.wacc = Math.max(0, num(input.value) || 0);
+          else if (key === 'sell1' && showRanges) {
+            row.sell1 = Math.max(0, num(input.value) || 0);
+            row.sell2 = row.sell1 * 1.1;
+          }
+        });
+        persist('Mass update saved ✓');
+        backdrop.remove();
+      });
+    }
+
     function updateSummary() {
       const invested = rows.reduce((s, r) => s + r.wacc * r.qty, 0);
       const current = rows.reduce((s, r) => s + r.ltp * r.qty, 0);
@@ -261,7 +324,6 @@
       const val = (obj) => {
         switch (sortKey) {
           case 'script': return obj.script.toLowerCase();
-          case 'sector': return obj.sector.toLowerCase();
           case 'ltp': return obj.ltp;
           case 'qty': return obj.qty;
           case 'sell1': return obj.sell1;
@@ -288,7 +350,7 @@
     }
 
     function currency(value) {
-      return `₨${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(Number(value || 0))}`;
+      return `Rs ${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(Number(value || 0))}`;
     }
 
     function num(v) {
