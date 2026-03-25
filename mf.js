@@ -52,6 +52,8 @@
       deleteSipBtn.addEventListener('click', () => {
         if (!activeSip || activeSip === 'ALL_SIP') return show('Select a SIP to delete.');
         if (defaultSips.includes(activeSip)) return show('Default SIP cannot be deleted.');
+        const refundAmount = (state.records[activeSip] || []).reduce((sum, row) => sum + Number(row.amount || 0), 0);
+        if (window.PmsCapital && refundAmount) window.PmsCapital.adjustCash(refundAmount);
         state.sips = state.sips.filter((s) => s !== activeSip);
         delete state.records[activeSip];
         delete state.currentNav[activeSip];
@@ -179,7 +181,7 @@
           <td>${fmtUnits(row.units)}</td>
           <td>${fmtNav(row.nav)}</td>
           <td>${currency(row.amount)}</td>
-          ${historySip === 'ALL' ? '' : `<td class="actions-cell"><button class="btn-danger" type="button" data-action="delete" data-id="${row.id}">Delete</button></td>`}
+          ${historySip === 'ALL' ? '' : `<td class="actions-cell"><button class="btn-danger" type="button" data-action="delete" data-id="${row.id}">🗑️</button></td>`}
         `;
         tbody.appendChild(tr);
       });
@@ -331,7 +333,10 @@
     }
 
     function deleteSipRecord(sipName, id) {
-      state.records[sipName] = (state.records[sipName] || []).filter((row) => row.id !== id);
+      const existing = state.records[sipName] || [];
+      const removed = existing.find((row) => row.id === id);
+      if (removed && window.PmsCapital) window.PmsCapital.adjustCash(Number(removed.amount || 0));
+      state.records[sipName] = existing.filter((row) => row.id !== id);
       if (!state.records[sipName].length) {
         state.currentNav[sipName] = 0;
       }

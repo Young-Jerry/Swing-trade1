@@ -37,6 +37,8 @@
   function renderTopWidget() {
     const nav = document.querySelector('.nav');
     if (!nav || nav.querySelector('.cash-widget')) return;
+    const page = location.pathname.split('/').pop() || 'index.html';
+    if (page === 'index.html') return;
 
     const wrap = document.createElement('div');
     wrap.className = 'cash-widget';

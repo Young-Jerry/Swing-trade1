@@ -10,6 +10,8 @@
     const shares = document.getElementById('shares');
     const sellingPrice = document.getElementById('sellingPrice');
     const sellingWrap = document.getElementById('sellingWrap');
+    const capitalGainRow = document.getElementById('capitalGainRow');
+    const receivableRow = document.getElementById('receivableRow');
 
     [action, purchasePrice, shares, sellingPrice].forEach((el) => {
       el.addEventListener('input', calculate);
@@ -25,25 +27,33 @@
       const sell = num(sellingPrice.value);
 
       sellingWrap.style.display = side === 'sell' ? 'flex' : 'none';
+      capitalGainRow.style.display = side === 'sell' ? 'flex' : 'none';
+      receivableRow.style.display = side === 'sell' ? 'flex' : 'none';
 
       if (!valid(qty) || !valid(buy) || (side === 'sell' && !valid(sell))) {
-        setResults(0, 0, 0, 0, 0);
+        setResults({ totalAmount: 0, commission: 0, sebonFee: 0, totalPayable: 0, costPerShare: 0 }, 0, 0);
         return;
       }
 
       const unitPrice = side === 'buy' ? buy : sell;
       const tx = math().calculateTransaction(side, unitPrice, qty);
+      const buyTx = math().calculateTransaction('buy', buy, qty);
+      const capitalGain = side === 'sell' ? tx.totalPayable - buyTx.totalPayable : 0;
+      const totalReceivable = side === 'sell' ? tx.totalPayable : 0;
 
-      setResults(tx.totalAmount, tx.commission, tx.sebonFee, tx.totalPayable, tx.costPerShare);
+      setResults(tx, capitalGain, totalReceivable);
     }
 
-    function setResults(totalAmount, commission, sebonFee, totalPayable, costPerShare) {
-      text('transactionAmount', money(totalAmount));
-      text('commission', money(commission));
-      text('sebonFee', money(sebonFee));
-      text('dpCharge', math().DP_CHARGE.toFixed(2));
-      text('totalPayable', money(totalPayable));
-      text('costPerShare', money(costPerShare));
+    function setResults(tx, capitalGain, totalReceivable) {
+      text('transactionAmount', money(tx.totalAmount));
+      text('commission', money(tx.commission));
+      text('sebonFee', money(tx.sebonFee));
+      text('dpCharge', money(math().DP_CHARGE));
+      text('totalPayable', money(tx.totalPayable));
+      text('costPerShare', money(tx.costPerShare));
+      text('capitalGain', money(capitalGain));
+      text('totalReceivable', money(totalReceivable));
+      text('commissionNote', `* Commission Amount includes NEPSE Commission Rs ${fmt(tx.commission)} & SEBON Regularity Fee Rs ${fmt(tx.sebonFee)}.`);
     }
 
 
@@ -68,7 +78,11 @@
     }
 
     function money(v) {
-      return `₨${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 4 }).format(v || 0)}`;
+      return `₨${new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v || 0)}`;
+    }
+
+    function fmt(v) {
+      return new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v || 0);
     }
 
     function num(v) {

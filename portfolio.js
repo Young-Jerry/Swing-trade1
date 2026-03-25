@@ -68,7 +68,7 @@
       if (!record.script || !record.sector || baseFields.some((n) => !Number.isFinite(n)) || (showRanges && !Number.isFinite(record.sell1))) return;
 
       rows.push(record);
-      const investedAmount = record.wacc * record.qty;
+      const investedAmount = investedCost(record.wacc, record.qty);
       if (window.PmsCapital) window.PmsCapital.adjustCash(-investedAmount);
       persist();
       form.reset();
@@ -216,22 +216,27 @@
 
       const editBtn = document.createElement('button');
       editBtn.className = 'btn-secondary';
-      editBtn.textContent = 'Edit Qty/WACC';
+      editBtn.textContent = '✏️';
       editBtn.onclick = () => {
+        const previousCost = investedCost(row.wacc, row.qty);
         const qty = prompt('Quantity', String(row.qty));
         if (qty === null) return;
         const wacc = prompt('WACC', String(row.wacc));
         if (wacc === null) return;
         row.qty = num(qty) || row.qty;
         row.wacc = num(wacc) || row.wacc;
+        const newCost = investedCost(row.wacc, row.qty);
+        if (window.PmsCapital) window.PmsCapital.adjustCash(previousCost - newCost);
         persist();
       };
 
       const delBtn = document.createElement('button');
       delBtn.className = 'btn-danger';
-      delBtn.textContent = 'Delete';
+      delBtn.textContent = '🗑️';
       delBtn.onclick = () => {
         if (!confirm('Delete this row?')) return;
+        const refund = investedCost(row.wacc, row.qty);
+        if (window.PmsCapital) window.PmsCapital.adjustCash(refund);
         rows = rows.filter((r) => r.id !== row.id);
         persist('Deleted ✓');
       };
@@ -300,6 +305,14 @@
 
     function clean(v) {
       return String(v || '').trim();
+    }
+
+    function investedCost(price, qty) {
+      const calc = window.PmsTradeMath
+        ? window.PmsTradeMath.calculateTransaction('buy', Number(price || 0), Number(qty || 0))
+        : null;
+      if (calc && Number.isFinite(calc.totalPayable)) return calc.totalPayable;
+      return Number(price || 0) * Number(qty || 0);
     }
   };
 

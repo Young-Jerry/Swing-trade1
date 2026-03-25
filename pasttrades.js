@@ -100,8 +100,8 @@
           <td class="${profitClass(row.perDayProfit)}">${currency(row.perDayProfit)}</td>
           <td>${Math.floor(Number(row.holdingDays || 0))}</td>
           <td class="actions-cell">
-            <button class="btn-secondary" data-action="edit" data-id="${row.id}">Edit</button>
-            <button class="btn-danger" data-action="delete" data-id="${row.id}">Delete</button>
+            <button class="btn-secondary" data-action="edit" data-id="${row.id}">✏️</button>
+            <button class="btn-danger" data-action="delete" data-id="${row.id}">🗑️</button>
           </td>
         `;
         exitedBody.appendChild(tr);
@@ -139,7 +139,10 @@
     }
 
     function deleteExited(id) {
-      const exited = readJson(EXITED_KEY).filter((row) => row.id !== id);
+      const current = readJson(EXITED_KEY);
+      const target = current.find((row) => row.id === id);
+      if (target && window.PmsCapital) window.PmsCapital.adjustCash(-Number(target.soldTotal || 0));
+      const exited = current.filter((row) => row.id !== id);
       localStorage.setItem(EXITED_KEY, JSON.stringify(exited));
       renderExited();
     }
