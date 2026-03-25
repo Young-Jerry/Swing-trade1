@@ -24,11 +24,11 @@
 
   <main class="container">
     <h1>NEPSE Share Calculator</h1>
-    <p class="subtitle">Uses slab-based broker commission + SEBON fee + DP charge.</p>
+    <p class="subtitle">Formatted exactly for your transaction checklist.</p>
 
     <section class="calc-grid">
       <article class="card section">
-        <h3>Input</h3>
+        <h3>Transaction Type</h3>
         <form id="calcForm" class="form-grid" style="grid-template-columns:1fr;">
           <label>Buy / Sell
             <select id="action" required>
@@ -36,11 +36,11 @@
               <option value="sell">Sell</option>
             </select>
           </label>
-          <label>Buy Price / WACC (Rs)
-            <input id="purchasePrice" type="number" min="0" step="0.01" required />
-          </label>
-          <label>Number of Shares
+          <label>Share Quantity
             <input id="shares" type="number" min="1" step="1" required />
+          </label>
+          <label>Purchase Price (Rs)
+            <input id="purchasePrice" type="number" min="0" step="0.01" required />
           </label>
           <label id="sellingWrap">Selling Price (Rs)
             <input id="sellingPrice" type="number" min="0" step="0.01" />
@@ -49,18 +49,16 @@
       </article>
 
       <article class="card section">
-        <h3>Results</h3>
+        <h3>Details:</h3>
         <ul class="result-list">
-          <li><span>Transaction Amount</span><strong id="transactionAmount">₨0</strong></li>
-          <li><span>NEPSE Commission</span><strong id="commission">₨0</strong></li>
-          <li><span>SEBON Regulatory Fee (0.015%)</span><strong id="sebonFee">₨0</strong></li>
-          <li><span>DP Charge</span><strong id="dpCharge">₨25</strong></li>
-          <li><span>Total (Buy: payable / Sell: receivable before tax)</span><strong id="totalPayable">₨0</strong></li>
-          <li><span>Capital Gain Tax (5% if profit &gt; 0)</span><strong id="capitalGainTax">₨0</strong></li>
-          <li><span id="secondaryLabel">Cost Price Per Share (Rs)</span><strong id="secondaryValue">₨0</strong></li>
-          <li><span>Net Profit / Loss (Sell)</span><strong id="profitValue">₨0</strong></li>
-          <li><span id="finalLabel">Total Amount Payable (Rs)</span><strong id="costPerShare">₨0</strong></li>
+          <li><span>Total Amount</span><strong id="transactionAmount">₨0</strong></li>
+          <li><span>* Commission</span><strong id="commission">₨0</strong></li>
+          <li><span>SEBON FEE</span><strong id="sebonFee">₨0</strong></li>
+          <li><span>DP Charge</span><strong id="dpCharge">25.00</strong></li>
+          <li><span>Total Amount Payable (Rs)</span><strong id="totalPayable">₨0</strong></li>
+          <li><span>Cost Price Per Share (Rs)</span><strong id="costPerShare">₨0</strong></li>
         </ul>
+        <p class="subtitle" id="commissionNote">* Commission Amount includes NEPSE Commission Rs  &amp; SEBON Regularity Fee Rs </p>
       </article>
     </section>
   </main>

@@ -43,12 +43,12 @@
       qty: num(fd.get('qty')),
       wacc: num(fd.get('wacc')),
       sell1: showRanges ? num(fd.get('sell1')) : 0,
-      sell2: showRanges ? num(fd.get('sell2')) : 0,
+      sell2: showRanges ? num(fd.get('sell1')) * 1.1 : 0,
       ltpChangePct: 0,
     };
 
     const baseFields = [record.ltp, record.qty, record.wacc];
-    if (!record.script || !record.sector || baseFields.some((n) => !Number.isFinite(n)) || (showRanges && [record.sell1, record.sell2].some((n) => !Number.isFinite(n)))) return;
+    if (!record.script || !record.sector || baseFields.some((n) => !Number.isFinite(n)) || (showRanges && !Number.isFinite(record.sell1))) return;
 
     rows.push(record);
     persist();
@@ -66,7 +66,7 @@
       qty: num(r.qty) || 0,
       wacc: num(r.wacc) || 0,
       sell1: num(r.sell1) || 0,
-      sell2: num(r.sell2) || 0,
+      sell2: num(r.sell2) || ((num(r.sell1) || 0) * 1.1),
       ltpChangePct: Number.isFinite(Number(r.ltpChangePct)) ? Number(r.ltpChangePct) : 0,
     }));
   }
@@ -175,23 +175,20 @@
     const high = document.createElement('input');
     high.type = 'number';
     high.className = 'inline-edit range-input';
-    high.value = fmt(row.sell2);
+    high.value = fmt(row.sell2 || (row.sell1 * 1.1));
     high.step = '0.01';
     high.min = '0';
+    high.readOnly = true;
 
     low.addEventListener('blur', () => {
       const value = num(low.value);
       if (!Number.isFinite(value)) return;
       row.sell1 = value;
+      row.sell2 = value * 1.1;
+      high.value = fmt(row.sell2);
       persist();
     });
 
-    high.addEventListener('blur', () => {
-      const value = num(high.value);
-      if (!Number.isFinite(value)) return;
-      row.sell2 = value;
-      persist();
-    });
 
     wrap.append(low, high);
     td.appendChild(wrap);
