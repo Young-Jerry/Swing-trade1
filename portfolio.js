@@ -68,6 +68,8 @@
       if (!record.script || !record.sector || baseFields.some((n) => !Number.isFinite(n)) || (showRanges && !Number.isFinite(record.sell1))) return;
 
       rows.push(record);
+      const investedAmount = record.wacc * record.qty;
+      if (window.PmsCapital) window.PmsCapital.adjustCash(-investedAmount);
       persist();
       form.reset();
       form.querySelector('input[name="script"]').focus();

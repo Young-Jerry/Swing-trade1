@@ -319,6 +319,7 @@
       sanitized.amount = sanitized.units * sanitized.nav;
 
       state.records[sipName].push(sanitized);
+      if (window.PmsCapital) window.PmsCapital.adjustCash(-sanitized.amount);
       state.records[sipName].sort((a, b) => a.date.localeCompare(b.date));
 
       state.currentNav[sipName] = sanitized.nav;

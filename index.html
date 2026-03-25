@@ -44,6 +44,14 @@
         <div class="stat-label">Portfolio Value (DP Holding)</div>
         <div class="stat-value" id="combinedTotal">₨0</div>
       </article>
+      <article class="card stat-card">
+        <div class="stat-label">Invested Capital (Open)</div>
+        <div class="stat-value" id="openInvestedCapital">₨0</div>
+      </article>
+      <article class="card stat-card">
+        <div class="stat-label">Cash Balance</div>
+        <div class="stat-value" id="dashboardCashBalance">₨0</div>
+      </article>
     </section>
 
     <section class="dashboard-layout">
@@ -96,6 +104,8 @@
     <footer class="subtitle" style="margin-top:16px; text-align:center;">NEPSE Explained - Sohaum Mainali</footer>
   </main>
 
+  <script src="trade-math.js"></script>
+  <script src="capital-manager.js"></script>
   <script type="module" src="firebase-sync.js"></script>
   <script src="data-recorder.js"></script>
   <script src="script.js"></script>

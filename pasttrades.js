@@ -39,7 +39,12 @@
         const record = active.find((item) => item.id === recordId);
         if (!record) return;
 
-        const profit = (soldPrice - record.buyPrice) * record.qty;
+        const roundTrip = tradeMath().calculateRoundTrip({
+          buyPrice: record.buyPrice,
+          soldPrice,
+          qty: record.qty,
+        });
+        const profit = roundTrip.profit;
         const perDayProfit = holdingDays > 0 ? profit / holdingDays : profit;
 
         const exited = readJson(EXITED_KEY);
@@ -50,12 +55,15 @@
           qty: record.qty,
           buyPrice: record.buyPrice,
           soldPrice,
+          buyTotal: roundTrip.invested,
+          soldTotal: roundTrip.realizedAmount,
           profit,
           perDayProfit,
           holdingDays,
         });
 
         localStorage.setItem(EXITED_KEY, JSON.stringify(exited));
+        if (window.PmsCapital) window.PmsCapital.adjustCash(roundTrip.realizedAmount);
         removeRecord(record);
         soldPriceInput.value = '';
         holdingDaysInput.value = '';
@@ -198,6 +206,17 @@
       sipState.records = sipState.records || {};
       sipState.records[record.sipName] = (sipState.records[record.sipName] || []).filter((r) => r.id !== record.rawId);
       localStorage.setItem(key, JSON.stringify(sipState));
+    }
+
+
+    function tradeMath() {
+      return window.PmsTradeMath || {
+        calculateRoundTrip: ({ buyPrice, soldPrice, qty }) => ({
+          invested: Number(buyPrice || 0) * Number(qty || 0),
+          realizedAmount: Number(soldPrice || 0) * Number(qty || 0),
+          profit: (Number(soldPrice || 0) - Number(buyPrice || 0)) * Number(qty || 0),
+        }),
+      };
     }
 
     function readJson(key) {
