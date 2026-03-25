@@ -7,7 +7,6 @@
   const tableBody = document.querySelector('#portfolioTable tbody');
   const form = document.getElementById('addForm');
   const indicator = document.getElementById('saveIndicator');
-  const API_BASE = window.NEPSE_API_BASE || localStorage.getItem('nepseApiBase') || 'http://localhost:8000';
 
   let sortKey = 'script';
   let sortDir = 1;
@@ -16,8 +15,6 @@
 
   bindEvents();
   render();
-  refreshLtpFromApi();
-  setInterval(refreshLtpFromApi, 10000);
 
   function bindEvents() {
     form.addEventListener('submit', onSubmit);
@@ -123,7 +120,7 @@
       input.step = '0.01';
     }
 
-    input.addEventListener('change', () => {
+    input.addEventListener('blur', () => {
       const newValue = type === 'number' ? num(input.value) : clean(input.value);
       if (type === 'number' && !Number.isFinite(newValue)) return;
       row[key] = opts.transform === 'upper' ? String(newValue).toUpperCase() : newValue;
@@ -141,11 +138,11 @@
 
     const input = document.createElement('input');
     input.type = 'number';
-    input.className = 'inline-edit';
+    input.className = 'inline-edit ltp-input';
     input.value = fmt(row.ltp);
     input.min = '0';
     input.step = '0.01';
-    input.addEventListener('change', () => {
+    input.addEventListener('blur', () => {
       const value = num(input.value);
       if (!Number.isFinite(value)) return;
       row.ltp = value;
@@ -170,26 +167,26 @@
 
     const low = document.createElement('input');
     low.type = 'number';
-    low.className = 'inline-edit';
+    low.className = 'inline-edit range-input';
     low.value = fmt(row.sell1);
     low.step = '0.01';
     low.min = '0';
 
     const high = document.createElement('input');
     high.type = 'number';
-    high.className = 'inline-edit';
+    high.className = 'inline-edit range-input';
     high.value = fmt(row.sell2);
     high.step = '0.01';
     high.min = '0';
 
-    low.addEventListener('change', () => {
+    low.addEventListener('blur', () => {
       const value = num(low.value);
       if (!Number.isFinite(value)) return;
       row.sell1 = value;
       persist();
     });
 
-    high.addEventListener('change', () => {
+    high.addEventListener('blur', () => {
       const value = num(high.value);
       if (!Number.isFinite(value)) return;
       row.sell2 = value;
@@ -241,33 +238,6 @@
     const plNode = document.getElementById('totalPL');
     plNode.textContent = currency(pl);
     plNode.className = plClass(pl);
-  }
-
-  async function refreshLtpFromApi() {
-    const symbols = [...new Set(rows.map((r) => r.script).filter(Boolean))];
-    if (!symbols.length) return;
-
-    let changed = false;
-    await Promise.all(symbols.map(async (symbol) => {
-      try {
-        const response = await fetch(`${API_BASE}/stock?symbol=${encodeURIComponent(symbol)}`);
-        if (!response.ok) return;
-        const data = await response.json();
-        rows.forEach((row) => {
-          if (row.script !== symbol || !Number.isFinite(Number(data.ltp))) return;
-          row.ltp = Number(data.ltp);
-          row.ltpChangePct = row.wacc > 0 ? ((row.ltp - row.wacc) / row.wacc) * 100 : 0;
-          changed = true;
-        });
-      } catch {
-        // Graceful fail in frontend when backend is unreachable.
-      }
-    }));
-
-    if (changed) {
-      localStorage.setItem(storageKey, JSON.stringify(rows));
-      render();
-    }
   }
 
   function sorter(a, b) {

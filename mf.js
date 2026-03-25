@@ -22,6 +22,8 @@
   render();
 
   function bindEvents() {
+    monthlyForm.elements.dueMonth.value = monthValue(new Date());
+
     manualSipForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const name = clean(manualSipForm.elements.newSipName.value || '').toUpperCase();
@@ -29,6 +31,7 @@
       if (state.sips.includes(name)) return show('SIP already exists.');
       state.sips.push(name);
       state.records[name] = state.records[name] || [];
+      state.currentNav[name] = state.currentNav[name] || 0;
       activeSip = name;
       manualSipForm.reset();
       persist('SIP type added.');
@@ -39,6 +42,7 @@
       if (defaultSips.includes(selected)) return show('Default SIP cannot be deleted.');
       state.sips = state.sips.filter((s) => s !== selected);
       delete state.records[selected];
+      delete state.currentNav[selected];
       activeSip = state.sips[0] || 'SSIS';
       persist('SIP removed.');
     });
@@ -69,9 +73,10 @@
       const sipName = String(fd.get('sipName'));
       const units = num(fd.get('units'));
       const nav = num(fd.get('nav'));
-      const entryDate = String(fd.get('entryDate'));
-      if (!Number.isFinite(units) || !Number.isFinite(nav) || units <= 0 || nav <= 0 || !entryDate) return;
+      const dueMonth = String(fd.get('dueMonth'));
+      if (!Number.isFinite(units) || !Number.isFinite(nav) || units <= 0 || nav <= 0 || !dueMonth) return;
 
+      const entryDate = `${dueMonth}-15`;
       addEntry(sipName, {
         id: crypto.randomUUID(),
         date: entryDate,
@@ -80,7 +85,9 @@
         nav,
         amount: units * nav,
       });
-      monthlyForm.reset();
+      monthlyForm.elements.dueMonth.value = monthValue(new Date());
+      monthlyForm.elements.units.value = '';
+      monthlyForm.elements.nav.value = '';
       persist('Monthly SIP entry added.');
     });
 
@@ -132,28 +139,61 @@
 
   function renderDues() {
     pendingDues.innerHTML = '';
-    const now = new Date();
-    const year = now.getUTCFullYear();
-    const month = now.getUTCMonth();
     state.sips.forEach((sip) => {
-      const dueDate = `${year}-${String(month + 1).padStart(2, '0')}-15`;
-      const hasEntry = (state.records[sip] || []).some((r) => r.type === 'MONTHLY' && r.date === dueDate);
-      if (hasEntry || now.getUTCDate() < 15) return;
-      const li = document.createElement('li');
-      li.innerHTML = `<span>${sip}: Missing monthly entry for ${dueDate}</span><strong>Pending</strong>`;
-      pendingDues.appendChild(li);
+      dueMonthsUntilNow().forEach((dueDate) => {
+        const hasEntry = (state.records[sip] || []).some((r) => r.type === 'MONTHLY' && r.date === dueDate);
+        if (hasEntry) return;
+
+        const li = document.createElement('li');
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn-secondary';
+        btn.textContent = 'Fill Due';
+        btn.onclick = () => {
+          activeSip = sip;
+          monthlyForm.elements.sipName.value = sip;
+          monthlyForm.elements.dueMonth.value = dueDate.slice(0, 7);
+          render();
+          show(`Due selected: ${sip} ${dueDate}`);
+        };
+
+        li.innerHTML = `<span>${sip}: Missing monthly entry for ${dueDate}</span><strong>Pending</strong>`;
+        li.appendChild(btn);
+        pendingDues.appendChild(li);
+      });
     });
+
     if (!pendingDues.children.length) {
       pendingDues.innerHTML = '<li><span>No pending dues.</span><strong>✓</strong></li>';
     }
   }
 
+  function dueMonthsUntilNow() {
+    const list = [];
+    const now = new Date();
+    let y = 2026;
+    let m = 2; // March (0-indexed)
+    while (y < now.getUTCFullYear() || (y === now.getUTCFullYear() && m <= now.getUTCMonth())) {
+      list.push(`${y}-${String(m + 1).padStart(2, '0')}-15`);
+      m += 1;
+      if (m > 11) {
+        y += 1;
+        m = 0;
+      }
+    }
+    return list;
+  }
+
   function addEntry(sipName, record) {
     state.records[sipName] = state.records[sipName] || [];
-    state.records[sipName].push(record);
+    const existingMonthly = state.records[sipName].find((item) => item.type === 'MONTHLY' && item.date === record.date);
+    if (existingMonthly) {
+      Object.assign(existingMonthly, record);
+    } else {
+      state.records[sipName].push(record);
+    }
     state.currentNav[sipName] = record.nav;
 
-    // NAV update should reflect all previous records for selected SIP.
     state.records[sipName] = state.records[sipName].map((item) => ({ ...item, nav: record.nav, amount: item.units * record.nav }));
     activeSip = sipName;
   }
@@ -214,6 +254,10 @@
 
   function today() {
     return new Date().toISOString().slice(0, 10);
+  }
+
+  function monthValue(date) {
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
   }
 
   function fmtUnits(value) {

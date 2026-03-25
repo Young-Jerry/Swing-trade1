@@ -1,6 +1,6 @@
 (() => {
   const key = 'journals';
-  const MIN_DATE = new Date('2026-03-24T00:00:00');
+  const MIN_DATE = new Date('2026-03-25T00:00:00');
   const today = stripTime(new Date());
   let currentDate = new Date(today);
   if (currentDate < MIN_DATE) currentDate = new Date(MIN_DATE);
