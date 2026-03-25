@@ -1,9 +1,10 @@
 (function () {
+  const EXITED_KEY = 'exitedTradesV2';
   const colors = ['#f4b942', '#2ac07e', '#4e89ff'];
   const keys = [
     { id: 'trades', label: 'Trades', node: 'totalTrades', total: tradeLikeTotal },
     { id: 'longterm', label: 'Long Term', node: 'totalLongTerm', total: tradeLikeTotal },
-    { id: 'sipStateV2', label: 'SIP System', node: 'totalMF', total: sipTotal },
+    { id: 'sipStateV4', label: 'SIP System', node: 'totalMF', total: sipTotal },
   ];
 
   const totals = keys.map((k) => ({ ...k, value: k.total(k.id) }));
@@ -15,6 +16,7 @@
   document.getElementById('combinedTotal').textContent = currency(combined);
 
   renderPie(totals, combined);
+  renderProfitPanel();
 
   function tradeLikeTotal(key) {
     const rows = JSON.parse(localStorage.getItem(key) || '[]');
@@ -25,6 +27,94 @@
     const state = JSON.parse(localStorage.getItem(key) || '{}');
     const records = Object.values(state.records || {});
     return records.flat().reduce((sum, row) => sum + Number(row.amount || 0), 0);
+  }
+
+  function renderProfitPanel() {
+    const rows = JSON.parse(localStorage.getItem(EXITED_KEY) || '[]');
+    const totalProfit = rows.reduce((sum, row) => sum + exactProfit(row), 0);
+    const totalInvested = rows.reduce((sum, row) => sum + (Number(row.buyPrice || 0) * Number(row.qty || 0)), 0);
+    const wins = rows.filter((row) => exactProfit(row) > 0).length;
+    const losses = rows.filter((row) => exactProfit(row) < 0).length;
+
+    const profitNode = document.getElementById('profitValue');
+    profitNode.textContent = currency(totalProfit);
+    profitNode.className = totalProfit >= 0 ? 'value-profit' : 'value-loss';
+    document.getElementById('totalInvested').textContent = currency(totalInvested);
+    document.getElementById('winCount').textContent = String(wins);
+    document.getElementById('lossCount').textContent = String(losses);
+
+    drawProfitChart(rows);
+  }
+
+  function drawProfitChart(rows) {
+    const canvas = document.getElementById('profitChart');
+    const tooltip = document.getElementById('chartTooltip');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const points = [];
+    let cumulative = 0;
+    rows.forEach((row, index) => {
+      cumulative += exactProfit(row);
+      points.push({ index, total: cumulative });
+    });
+    if (!points.length) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#9ba7bf';
+      ctx.font = '14px Inter, sans-serif';
+      ctx.fillText('No closed trades yet.', 24, 38);
+      return;
+    }
+
+    const pad = { left: 20, right: 20, top: 16, bottom: 20 };
+    const plotW = canvas.width - pad.left - pad.right;
+    const plotH = canvas.height - pad.top - pad.bottom;
+    const minY = Math.min(0, ...points.map((p) => p.total));
+    const maxY = Math.max(...points.map((p) => p.total), 1);
+    const yRange = maxY - minY || 1;
+    const toX = (i) => pad.left + (i / Math.max(points.length - 1, 1)) * plotW;
+    const toY = (v) => pad.top + (1 - ((v - minY) / yRange)) * plotH;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#0f1d2e';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.beginPath();
+    points.forEach((p, i) => {
+      const x = toX(i);
+      const y = toY(p.total);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    const stroke = points[points.length - 1].total >= 0 ? '#00e540' : '#ea5a5a';
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    ctx.lineTo(toX(points.length - 1), toY(minY));
+    ctx.lineTo(toX(0), toY(minY));
+    ctx.closePath();
+    ctx.fillStyle = points[points.length - 1].total >= 0 ? 'rgba(0, 229, 64, 0.2)' : 'rgba(234, 90, 90, 0.2)';
+    ctx.fill();
+
+    canvas.onmousemove = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const relX = e.clientX - rect.left - pad.left;
+      const idx = Math.max(0, Math.min(points.length - 1, Math.round((relX / plotW) * (points.length - 1))));
+      const point = points[idx];
+      tooltip.textContent = `Total Profit: ${currency(point.total)}`;
+      tooltip.style.display = 'block';
+      tooltip.style.left = `${e.pageX + 10}px`;
+      tooltip.style.top = `${e.pageY + 10}px`;
+    };
+    canvas.onmouseleave = () => {
+      tooltip.style.display = 'none';
+    };
+  }
+
+  function exactProfit(row) {
+    return (Number(row.soldPrice || 0) - Number(row.buyPrice || 0)) * Number(row.qty || 0);
   }
 
   function renderPie(parts, total) {
