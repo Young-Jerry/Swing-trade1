@@ -3,17 +3,21 @@
   if (!pageRoot) return;
 
   const storageKey = pageRoot.dataset.portfolioKey;
+  const showRanges = pageRoot.dataset.showRanges === 'true';
   const tableBody = document.querySelector('#portfolioTable tbody');
   const form = document.getElementById('addForm');
   const indicator = document.getElementById('saveIndicator');
+  const API_BASE = window.NEPSE_API_BASE || localStorage.getItem('nepseApiBase') || 'http://localhost:8000';
+
   let sortKey = 'script';
   let sortDir = 1;
   let rows = readRows();
-  let undoState = null;
   let indicatorTimer;
 
   bindEvents();
   render();
+  refreshLtpFromApi();
+  setInterval(refreshLtpFromApi, 10000);
 
   function bindEvents() {
     form.addEventListener('submit', onSubmit);
@@ -29,15 +33,6 @@
         render();
       });
     });
-
-    form.querySelectorAll('[data-next]').forEach((el, idx, all) => {
-      el.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          (all[idx + 1] || form.querySelector('button[type="submit"]')).focus();
-        }
-      });
-    });
   }
 
   function onSubmit(e) {
@@ -45,16 +40,19 @@
     const fd = new FormData(form);
     const record = {
       id: crypto.randomUUID(),
-      script: clean(fd.get('script')),
+      script: clean(fd.get('script')).toUpperCase(),
       sector: clean(fd.get('sector')),
       ltp: num(fd.get('ltp')),
       qty: num(fd.get('qty')),
       wacc: num(fd.get('wacc')),
-      sell1: num(fd.get('sell1')),
+      sell1: showRanges ? num(fd.get('sell1')) : 0,
+      sell2: showRanges ? num(fd.get('sell2')) : 0,
+      ltpChangePct: 0,
     };
-    if (!record.script || !record.sector || [record.ltp, record.qty, record.wacc, record.sell1].some((n) => Number.isNaN(n))) {
-      return;
-    }
+
+    const baseFields = [record.ltp, record.qty, record.wacc];
+    if (!record.script || !record.sector || baseFields.some((n) => !Number.isFinite(n)) || (showRanges && [record.sell1, record.sell2].some((n) => !Number.isFinite(n)))) return;
+
     rows.push(record);
     persist();
     form.reset();
@@ -65,18 +63,20 @@
     const raw = JSON.parse(localStorage.getItem(storageKey) || '[]');
     return raw.map((r) => ({
       id: r.id || crypto.randomUUID(),
-      script: clean(r.script),
+      script: clean(r.script).toUpperCase(),
       sector: clean(r.sector),
-      ltp: num(r.ltp),
-      qty: num(r.qty),
-      wacc: num(r.wacc),
-      sell1: num(r.sell1),
+      ltp: num(r.ltp) || 0,
+      qty: num(r.qty) || 0,
+      wacc: num(r.wacc) || 0,
+      sell1: num(r.sell1) || 0,
+      sell2: num(r.sell2) || 0,
+      ltpChangePct: Number.isFinite(Number(r.ltpChangePct)) ? Number(r.ltpChangePct) : 0,
     }));
   }
 
-  function persist() {
+  function persist(message = 'Saved ✓') {
     localStorage.setItem(storageKey, JSON.stringify(rows));
-    flashSaved();
+    flashSaved(message);
     render();
   }
 
@@ -93,30 +93,26 @@
     tableBody.innerHTML = '';
 
     list.forEach((row) => {
-      const sell2 = row.sell1 * 1.1;
-      const distance = row.ltp - row.sell1;
       const current = row.ltp * row.qty;
       const pl = (row.ltp - row.wacc) * row.qty;
 
       const tr = document.createElement('tr');
-      tr.className = row.ltp >= row.sell1 ? 'highlight-row' : '';
-
-      tr.appendChild(editableCell(row, 'script', row.script, 'text'));
+      tr.appendChild(editableCell(row, 'script', row.script, 'text', { transform: 'upper' }));
       tr.appendChild(editableCell(row, 'sector', row.sector, 'text'));
-      tr.appendChild(editableCell(row, 'ltp', fmt(row.ltp), 'number'));
-      tr.appendChild(sellCell(row, sell2));
-      tr.appendChild(textCell(currency(distance), plClass(distance)));
+      tr.appendChild(ltpCell(row));
+      if (showRanges) {
+        tr.appendChild(rangeCell(row));
+      }
       tr.appendChild(textCell(currency(current)));
       tr.appendChild(textCell(currency(pl), plClass(pl)));
       tr.appendChild(actionCell(row));
-
       tableBody.appendChild(tr);
     });
 
     updateSummary();
   }
 
-  function editableCell(row, key, value, type) {
+  function editableCell(row, key, value, type, opts = {}) {
     const td = document.createElement('td');
     const input = document.createElement('input');
     input.className = 'inline-edit';
@@ -126,54 +122,99 @@
       input.min = '0';
       input.step = '0.01';
     }
-    input.addEventListener('input', () => {
-      row[key] = type === 'number' ? num(input.value) : clean(input.value);
+
+    input.addEventListener('change', () => {
+      const newValue = type === 'number' ? num(input.value) : clean(input.value);
+      if (type === 'number' && !Number.isFinite(newValue)) return;
+      row[key] = opts.transform === 'upper' ? String(newValue).toUpperCase() : newValue;
       persist();
     });
+
     td.appendChild(input);
     return td;
   }
 
-  function sellCell(row, sell2) {
+  function ltpCell(row) {
     const td = document.createElement('td');
     const wrap = document.createElement('div');
-    wrap.style.display = 'flex';
-    wrap.style.gap = '6px';
+    wrap.className = 'ltp-wrap';
 
-    const sell1 = document.createElement('input');
-    sell1.type = 'number';
-    sell1.className = 'inline-edit';
-    sell1.value = fmt(row.sell1);
-    sell1.min = '0';
-    sell1.step = '0.01';
-
-    const sell2Input = document.createElement('input');
-    sell2Input.type = 'text';
-    sell2Input.value = fmt(sell2);
-    sell2Input.disabled = true;
-
-    sell1.addEventListener('input', () => {
-      row.sell1 = num(sell1.value);
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.className = 'inline-edit';
+    input.value = fmt(row.ltp);
+    input.min = '0';
+    input.step = '0.01';
+    input.addEventListener('change', () => {
+      const value = num(input.value);
+      if (!Number.isFinite(value)) return;
+      row.ltp = value;
+      row.ltpChangePct = row.wacc > 0 ? ((row.ltp - row.wacc) / row.wacc) * 100 : 0;
       persist();
     });
 
-    wrap.append(sell1, sell2Input);
+    const pct = document.createElement('small');
+    const sign = row.ltpChangePct >= 0 ? '+' : '';
+    pct.textContent = `(${sign}${(row.ltpChangePct || 0).toFixed(2)}%)`;
+    pct.className = row.ltpChangePct >= 0 ? 'value-profit' : 'value-loss';
+
+    wrap.append(input, pct);
+    td.appendChild(wrap);
+    return td;
+  }
+
+  function rangeCell(row) {
+    const td = document.createElement('td');
+    const wrap = document.createElement('div');
+    wrap.className = 'range-wrap';
+
+    const low = document.createElement('input');
+    low.type = 'number';
+    low.className = 'inline-edit';
+    low.value = fmt(row.sell1);
+    low.step = '0.01';
+    low.min = '0';
+
+    const high = document.createElement('input');
+    high.type = 'number';
+    high.className = 'inline-edit';
+    high.value = fmt(row.sell2);
+    high.step = '0.01';
+    high.min = '0';
+
+    low.addEventListener('change', () => {
+      const value = num(low.value);
+      if (!Number.isFinite(value)) return;
+      row.sell1 = value;
+      persist();
+    });
+
+    high.addEventListener('change', () => {
+      const value = num(high.value);
+      if (!Number.isFinite(value)) return;
+      row.sell2 = value;
+      persist();
+    });
+
+    wrap.append(low, high);
     td.appendChild(wrap);
     return td;
   }
 
   function actionCell(row) {
     const td = document.createElement('td');
+    td.className = 'actions-cell';
+
     const editBtn = document.createElement('button');
     editBtn.className = 'btn-secondary';
-    editBtn.textContent = 'Edit Hidden';
+    editBtn.textContent = 'Edit Qty/WACC';
     editBtn.onclick = () => {
       const qty = prompt('Quantity', String(row.qty));
       if (qty === null) return;
-      const wacc = prompt('WACC (hidden field)', String(row.wacc));
+      const wacc = prompt('WACC', String(row.wacc));
       if (wacc === null) return;
-      row.qty = num(qty);
-      row.wacc = num(wacc);
+      row.qty = num(qty) || row.qty;
+      row.wacc = num(wacc) || row.wacc;
       persist();
     };
 
@@ -182,36 +223,11 @@
     delBtn.textContent = 'Delete';
     delBtn.onclick = () => {
       if (!confirm('Delete this row?')) return;
-      undoState = { row: { ...row }, index: rows.findIndex((r) => r.id === row.id) };
       rows = rows.filter((r) => r.id !== row.id);
-      persist();
-      indicator.textContent = 'Deleted. Undo available';
-      const undoBtn = document.createElement('button');
-      undoBtn.className = 'btn-secondary';
-      undoBtn.textContent = 'Undo';
-      undoBtn.onclick = () => {
-        if (!undoState) return;
-        rows.splice(undoState.index, 0, undoState.row);
-        undoState = null;
-        persist();
-      };
-      indicator.replaceChildren(undoBtn);
-      indicatorTimer = setTimeout(() => {
-        undoState = null;
-        indicator.textContent = 'Saved ✓';
-      }, 5000);
+      persist('Deleted ✓');
     };
 
     td.append(editBtn, delBtn);
-    td.style.display = 'flex';
-    td.style.gap = '6px';
-    return td;
-  }
-
-  function textCell(text, className = '') {
-    const td = document.createElement('td');
-    td.textContent = text;
-    if (className) td.classList.add(className);
     return td;
   }
 
@@ -227,6 +243,33 @@
     plNode.className = plClass(pl);
   }
 
+  async function refreshLtpFromApi() {
+    const symbols = [...new Set(rows.map((r) => r.script).filter(Boolean))];
+    if (!symbols.length) return;
+
+    let changed = false;
+    await Promise.all(symbols.map(async (symbol) => {
+      try {
+        const response = await fetch(`${API_BASE}/stock?symbol=${encodeURIComponent(symbol)}`);
+        if (!response.ok) return;
+        const data = await response.json();
+        rows.forEach((row) => {
+          if (row.script !== symbol || !Number.isFinite(Number(data.ltp))) return;
+          row.ltp = Number(data.ltp);
+          row.ltpChangePct = row.wacc > 0 ? ((row.ltp - row.wacc) / row.wacc) * 100 : 0;
+          changed = true;
+        });
+      } catch {
+        // Graceful fail in frontend when backend is unreachable.
+      }
+    }));
+
+    if (changed) {
+      localStorage.setItem(storageKey, JSON.stringify(rows));
+      render();
+    }
+  }
+
   function sorter(a, b) {
     const val = (obj) => {
       switch (sortKey) {
@@ -234,7 +277,6 @@
         case 'sector': return obj.sector.toLowerCase();
         case 'ltp': return obj.ltp;
         case 'sell1': return obj.sell1;
-        case 'distance': return obj.ltp - obj.sell1;
         case 'current': return obj.ltp * obj.qty;
         case 'pl': return (obj.ltp - obj.wacc) * obj.qty;
         default: return obj.script.toLowerCase();
@@ -248,6 +290,13 @@
 
   function plClass(value) {
     return value >= 0 ? 'value-profit' : 'value-loss';
+  }
+
+  function textCell(text, className = '') {
+    const td = document.createElement('td');
+    td.textContent = text;
+    if (className) td.classList.add(className);
+    return td;
   }
 
   function currency(value) {

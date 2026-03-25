@@ -1,132 +1,219 @@
 (function () {
-  const SIP_KEY = 'sipData';
-  const SOLD_UNITS_KEY = 'sipSoldUnits';
+  const SIP_STATE_KEY = 'sipStateV2';
+  const LEGACY_SIP_KEY = 'sipData';
+  const defaultSips = ['SSIS', 'KSLY'];
 
-  const sipForm = document.getElementById('sipForm');
-  const partialExitForm = document.getElementById('partialExitForm');
-  const sipBody = document.querySelector('#sipTable tbody');
-  const totalInvestedNode = document.getElementById('totalInvested');
-  const totalUnitsNode = document.getElementById('totalUnits');
-  const remainingUnitsNode = document.getElementById('remainingUnits');
-  const exitMessage = document.getElementById('exitMessage');
+  const tabs = document.getElementById('sipTabs');
+  const sipSelect = document.getElementById('sipSelect');
+  const manualSipForm = document.getElementById('manualSipForm');
+  const lumpSumForm = document.getElementById('lumpSumForm');
+  const monthlyForm = document.getElementById('monthlyForm');
+  const deleteSipBtn = document.getElementById('deleteSipBtn');
+  const tbody = document.querySelector('#sipTable tbody');
+  const pendingDues = document.getElementById('pendingDues');
+  const msg = document.getElementById('sipMessage');
 
-  if (!sipForm || !sipBody) return;
+  if (!tabs || !manualSipForm) return;
 
-  const today = new Date().toISOString().slice(0, 10);
-  sipForm.elements.date.value = today;
-
+  let state = readState();
+  let activeSip = state.sips[0] || 'SSIS';
+  syncLegacyData();
   bindEvents();
   render();
 
   function bindEvents() {
-    sipForm.addEventListener('submit', onSipSubmit);
-    partialExitForm.addEventListener('submit', onPartialExit);
+    manualSipForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = clean(manualSipForm.elements.newSipName.value || '').toUpperCase();
+      if (!name) return show('Enter a new SIP name.');
+      if (state.sips.includes(name)) return show('SIP already exists.');
+      state.sips.push(name);
+      state.records[name] = state.records[name] || [];
+      activeSip = name;
+      manualSipForm.reset();
+      persist('SIP type added.');
+    });
 
-    sipForm.querySelectorAll('[data-next]').forEach((el, idx, all) => {
-      el.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          (all[idx + 1] || sipForm.querySelector('button[type="submit"]')).focus();
-        }
+    deleteSipBtn.addEventListener('click', () => {
+      const selected = sipSelect.value;
+      if (defaultSips.includes(selected)) return show('Default SIP cannot be deleted.');
+      state.sips = state.sips.filter((s) => s !== selected);
+      delete state.records[selected];
+      activeSip = state.sips[0] || 'SSIS';
+      persist('SIP removed.');
+    });
+
+    lumpSumForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const fd = new FormData(lumpSumForm);
+      const sipName = String(fd.get('sipName'));
+      const amount = num(fd.get('amount'));
+      const nav = num(fd.get('nav'));
+      if (!Number.isFinite(amount) || !Number.isFinite(nav) || amount <= 0 || nav <= 0) return;
+
+      addEntry(sipName, {
+        id: crypto.randomUUID(),
+        date: today(),
+        type: 'LUMP_SUM',
+        units: amount / nav,
+        nav,
+        amount,
+      });
+      lumpSumForm.reset();
+      persist('Lump sum entry added.');
+    });
+
+    monthlyForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const fd = new FormData(monthlyForm);
+      const sipName = String(fd.get('sipName'));
+      const units = num(fd.get('units'));
+      const nav = num(fd.get('nav'));
+      const entryDate = String(fd.get('entryDate'));
+      if (!Number.isFinite(units) || !Number.isFinite(nav) || units <= 0 || nav <= 0 || !entryDate) return;
+
+      addEntry(sipName, {
+        id: crypto.randomUUID(),
+        date: entryDate,
+        type: 'MONTHLY',
+        units,
+        nav,
+        amount: units * nav,
+      });
+      monthlyForm.reset();
+      persist('Monthly SIP entry added.');
+    });
+
+    [sipSelect, ...document.querySelectorAll('form select[name="sipName"]')].forEach((select) => {
+      select.addEventListener('change', () => {
+        activeSip = select.value;
+        render();
       });
     });
   }
 
-  function onSipSubmit(e) {
-    e.preventDefault();
-    const fd = new FormData(sipForm);
-    const date = String(fd.get('date') || '').trim() || today;
-    const amount = toNum(fd.get('amount'));
-    const nav = toNum(fd.get('nav'));
-
-    if (!Number.isFinite(amount) || !Number.isFinite(nav) || amount <= 0 || nav <= 0) return;
-
-    const entry = {
-      id: crypto.randomUUID(),
-      date,
-      amount,
-      nav,
-      units: amount / nav,
-    };
-
-    const rows = readSipData();
-    rows.push(entry);
-    localStorage.setItem(SIP_KEY, JSON.stringify(rows));
-
-    sipForm.reset();
-    sipForm.elements.date.value = today;
-    exitMessage.textContent = 'SIP entry saved.';
-    render();
-  }
-
-  function onPartialExit(e) {
-    e.preventDefault();
-    const totalUnits = totalUnitsOwned();
-    const toSell = toNum(partialExitForm.elements.unitsToSell.value);
-
-    if (!Number.isFinite(toSell) || toSell <= 0) {
-      exitMessage.textContent = 'Enter valid units to sell.';
-      return;
-    }
-
-    if (toSell > totalUnits) {
-      exitMessage.textContent = 'Units to sell cannot exceed total units owned.';
-      return;
-    }
-
-    localStorage.setItem(SOLD_UNITS_KEY, String(toSell));
-    partialExitForm.reset();
-    exitMessage.textContent = `Partial exit applied for ${fmtUnits(toSell)} units.`;
-    render();
-  }
-
-  function readSipData() {
-    const raw = JSON.parse(localStorage.getItem(SIP_KEY) || '[]');
-    return raw
-      .map((r) => ({
-        id: r.id || crypto.randomUUID(),
-        date: String(r.date || ''),
-        amount: toNum(r.amount),
-        nav: toNum(r.nav),
-        units: toNum(r.units),
-      }))
-      .filter((r) => Number.isFinite(r.amount) && Number.isFinite(r.nav) && Number.isFinite(r.units));
-  }
-
-  function totalUnitsOwned() {
-    return readSipData().reduce((sum, row) => sum + row.units, 0);
-  }
-
   function render() {
-    const rows = readSipData().sort((a, b) => String(a.date).localeCompare(String(b.date)));
-    const totalInvested = rows.reduce((sum, row) => sum + row.amount, 0);
-    const totalUnits = rows.reduce((sum, row) => sum + row.units, 0);
-    const soldUnits = Math.max(0, toNum(localStorage.getItem(SOLD_UNITS_KEY)) || 0);
-    const remaining = Math.max(0, totalUnits - soldUnits);
-
-    totalInvestedNode.textContent = currency(totalInvested);
-    totalUnitsNode.textContent = fmtUnits(totalUnits);
-    remainingUnitsNode.textContent = fmtUnits(remaining);
-
-    sipBody.innerHTML = '';
-    rows.forEach((row) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${escapeHtml(row.date)}</td>
-        <td>${currency(row.amount)}</td>
-        <td>${fmtNav(row.nav)}</td>
-        <td>${fmtUnits(row.units)}</td>
-      `;
-      sipBody.appendChild(tr);
+    tabs.innerHTML = '';
+    state.sips.forEach((name) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `btn-secondary ${name === activeSip ? 'active' : ''}`;
+      btn.textContent = name;
+      btn.onclick = () => {
+        activeSip = name;
+        render();
+      };
+      tabs.appendChild(btn);
     });
+
+    const selects = [sipSelect, ...document.querySelectorAll('form select[name="sipName"]')];
+    selects.forEach((select) => {
+      select.innerHTML = state.sips.map((name) => `<option value="${name}">${name}</option>`).join('');
+      select.value = activeSip;
+    });
+
+    const nav = state.currentNav[activeSip] || latestNav(activeSip);
+    const records = [...(state.records[activeSip] || [])].sort((a, b) => a.date.localeCompare(b.date));
+    const totalUnits = records.reduce((sum, row) => sum + row.units, 0);
+
+    document.getElementById('sipTotalUnits').textContent = fmtUnits(totalUnits);
+    document.getElementById('sipCurrentNav').textContent = currency(nav);
+    document.getElementById('sipTotalValue').textContent = currency(totalUnits * nav);
+
+    tbody.innerHTML = '';
+    records.forEach((row) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${row.date}</td><td>${row.type}</td><td>${fmtUnits(row.units)}</td><td>${fmtNav(row.nav)}</td><td>${currency(row.amount)}</td>`;
+      tbody.appendChild(tr);
+    });
+
+    renderDues();
   }
 
-  function toNum(v) {
-    return Number.parseFloat(v);
+  function renderDues() {
+    pendingDues.innerHTML = '';
+    const now = new Date();
+    const year = now.getUTCFullYear();
+    const month = now.getUTCMonth();
+    state.sips.forEach((sip) => {
+      const dueDate = `${year}-${String(month + 1).padStart(2, '0')}-15`;
+      const hasEntry = (state.records[sip] || []).some((r) => r.type === 'MONTHLY' && r.date === dueDate);
+      if (hasEntry || now.getUTCDate() < 15) return;
+      const li = document.createElement('li');
+      li.innerHTML = `<span>${sip}: Missing monthly entry for ${dueDate}</span><strong>Pending</strong>`;
+      pendingDues.appendChild(li);
+    });
+    if (!pendingDues.children.length) {
+      pendingDues.innerHTML = '<li><span>No pending dues.</span><strong>✓</strong></li>';
+    }
   }
 
-  function currency(value) {
-    return `₨${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(value || 0)}`;
+  function addEntry(sipName, record) {
+    state.records[sipName] = state.records[sipName] || [];
+    state.records[sipName].push(record);
+    state.currentNav[sipName] = record.nav;
+
+    // NAV update should reflect all previous records for selected SIP.
+    state.records[sipName] = state.records[sipName].map((item) => ({ ...item, nav: record.nav, amount: item.units * record.nav }));
+    activeSip = sipName;
+  }
+
+  function latestNav(sipName) {
+    const rows = state.records[sipName] || [];
+    if (!rows.length) return 0;
+    return rows[rows.length - 1].nav || 0;
+  }
+
+  function syncLegacyData() {
+    if (Object.values(state.records).some((rows) => rows.length)) return;
+    const legacy = JSON.parse(localStorage.getItem(LEGACY_SIP_KEY) || '[]');
+    if (!legacy.length) return;
+    state.records.SSIS = legacy.map((row) => {
+      const units = Number(row.units || (Number(row.amount || 0) / Number(row.nav || 1)));
+      const nav = Number(row.nav || 0);
+      return {
+        id: row.id || crypto.randomUUID(),
+        date: String(row.date || today()),
+        type: 'LEGACY',
+        units,
+        nav,
+        amount: units * nav,
+      };
+    }).filter((r) => Number.isFinite(r.units) && Number.isFinite(r.nav));
+    state.currentNav.SSIS = latestNav('SSIS');
+    persist('Legacy SIP data migrated to structured format.');
+  }
+
+  function readState() {
+    const existing = JSON.parse(localStorage.getItem(SIP_STATE_KEY) || 'null');
+    if (existing && Array.isArray(existing.sips)) return existing;
+    return {
+      sips: [...defaultSips],
+      records: { SSIS: [], KSLY: [] },
+      currentNav: {},
+    };
+  }
+
+  function persist(message = 'Saved ✓') {
+    localStorage.setItem(SIP_STATE_KEY, JSON.stringify(state));
+    show(message);
+    render();
+  }
+
+  function show(text) {
+    msg.textContent = text;
+  }
+
+  function clean(value) {
+    return String(value || '').trim();
+  }
+
+  function num(value) {
+    return Number.parseFloat(value);
+  }
+
+  function today() {
+    return new Date().toISOString().slice(0, 10);
   }
 
   function fmtUnits(value) {
@@ -134,15 +221,10 @@
   }
 
   function fmtNav(value) {
-    return new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(value || 0);
+    return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 4 }).format(value || 0);
   }
 
-  function escapeHtml(value) {
-    return String(value)
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#39;');
+  function currency(value) {
+    return `₨${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(value || 0)}`;
   }
 })();

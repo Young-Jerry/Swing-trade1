@@ -1,186 +1,156 @@
 (function () {
   const TRADES_KEY = 'trades';
-  const SIP_KEY = 'sipData';
-  const SIM_KEY = 'pastTradeSimulations';
+  const SIP_STATE_KEY = 'sipStateV2';
+  const EXITED_KEY = 'exitedTrades';
 
-  const tradeSelect = document.getElementById('tradeSelect');
-  const entryPriceInput = document.getElementById('entryPrice');
-  const quantityInput = document.getElementById('quantity');
-  const exitPriceInput = document.getElementById('exitPrice');
-  const holdingDaysInput = document.getElementById('holdingDays');
-  const analysisForm = document.getElementById('analysisForm');
-  const simTableBody = document.querySelector('#simTable tbody');
+  const activeBody = document.querySelector('#activeTradesTable tbody');
+  const exitedBody = document.querySelector('#exitedTable tbody');
+  if (!activeBody) return;
 
-  if (!tradeSelect || !analysisForm) return;
+  render();
 
-  const state = {
-    mergedTrades: [],
-  };
+  function render() {
+    const active = getActiveRecords();
+    const exited = readJson(EXITED_KEY);
 
-  bindEvents();
-  loadTradeOptions();
-  updateScenarioOutput();
-  renderSimulationRows();
+    activeBody.innerHTML = '';
+    active.forEach((row) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${row.source}</td>
+        <td>${escapeHtml(row.name)}</td>
+        <td>${fmtQty(row.qty)}</td>
+        <td>${currency(row.price)}</td>
+        <td>
+          <button class="btn-secondary" data-action="edit" data-id="${row.id}">Edit</button>
+          <button class="btn-danger" data-action="delete" data-id="${row.id}">Delete</button>
+          <button class="btn-primary" data-action="exit" data-id="${row.id}">Exit Trade</button>
+        </td>
+      `;
+      activeBody.appendChild(tr);
+    });
 
-  function bindEvents() {
-    tradeSelect.addEventListener('change', onTradeChange);
-    exitPriceInput.addEventListener('input', updateScenarioOutput);
-    holdingDaysInput.addEventListener('input', updateScenarioOutput);
+    exitedBody.innerHTML = '';
+    exited.forEach((row) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${row.exitedAt}</td><td>${row.source}</td><td>${escapeHtml(row.name)}</td><td>${fmtQty(row.qty)}</td><td>${currency(row.price)}</td>`;
+      exitedBody.appendChild(tr);
+    });
 
-    analysisForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const selected = getSelectedTrade();
-      const exitPrice = toNum(exitPriceInput.value);
-      const holdingDays = toNum(holdingDaysInput.value);
-      if (!selected || !Number.isFinite(exitPrice) || !Number.isFinite(holdingDays) || holdingDays <= 0) return;
-
-      const metrics = calculateMetrics(selected.entryPrice, exitPrice, selected.quantity, holdingDays);
-      const sims = readJson(SIM_KEY);
-      sims.push({
-        id: crypto.randomUUID(),
-        label: selected.label,
-        entryPrice: selected.entryPrice,
-        exitPrice,
-        quantity: selected.quantity,
-        holdingDays,
-        pl: metrics.pl,
-        pct: metrics.pct,
-        daily: metrics.daily,
-        createdAt: new Date().toISOString(),
-      });
-      localStorage.setItem(SIM_KEY, JSON.stringify(sims));
-      renderSimulationRows();
+    activeBody.querySelectorAll('button').forEach((btn) => {
+      btn.addEventListener('click', () => handleAction(btn.dataset.action, btn.dataset.id));
     });
   }
 
-  function loadTradeOptions() {
-    const trades = readJson(TRADES_KEY).map((row) => ({
-      id: `trade-${row.id || crypto.randomUUID()}`,
-      source: 'trade',
-      label: String(row.script || 'Trade').trim() || 'Trade',
-      entryPrice: toNum(row.wacc),
-      quantity: toNum(row.qty),
-    }));
+  function handleAction(action, id) {
+    const active = getActiveRecords();
+    const record = active.find((r) => r.id === id);
+    if (!record) return;
 
-    const sipRecords = readJson(SIP_KEY).map((row, idx) => ({
-      id: `sip-${row.id || idx}`,
-      source: 'sip',
-      label: `SIP ${String(row.date || `#${idx + 1}`)}`,
-      entryPrice: toNum(row.nav),
-      quantity: toNum(row.units),
-    }));
-
-    state.mergedTrades = [...trades, ...sipRecords]
-      .filter((row) => Number.isFinite(row.entryPrice) && Number.isFinite(row.quantity) && row.quantity > 0);
-
-    tradeSelect.innerHTML = '';
-    if (!state.mergedTrades.length) {
-      tradeSelect.innerHTML = '<option value="">No trades found in localStorage</option>';
-      entryPriceInput.value = '';
-      quantityInput.value = '';
+    if (action === 'edit') {
+      const qty = prompt('New Qty/Units', String(record.qty));
+      const price = prompt('New WACC/NAV', String(record.price));
+      if (qty === null || price === null) return;
+      updateRecord(record, Number(qty), Number(price));
+      render();
       return;
     }
 
-    state.mergedTrades.forEach((row) => {
-      const option = document.createElement('option');
-      option.value = row.id;
-      option.textContent = `${row.source === 'trade' ? '[Trade]' : '[SIP]'} ${row.label} | Entry: ${currency(row.entryPrice)} | Qty: ${fmtQty(row.quantity)}`;
-      tradeSelect.appendChild(option);
-    });
+    if (action === 'delete') {
+      removeRecord(record);
+      render();
+      return;
+    }
 
-    onTradeChange();
-  }
-
-  function onTradeChange() {
-    const selected = getSelectedTrade();
-    if (!selected) return;
-    entryPriceInput.value = String(selected.entryPrice);
-    quantityInput.value = String(selected.quantity);
-    updateScenarioOutput();
-  }
-
-  function getSelectedTrade() {
-    return state.mergedTrades.find((row) => row.id === tradeSelect.value) || state.mergedTrades[0] || null;
-  }
-
-  function updateScenarioOutput() {
-    const selected = getSelectedTrade();
-    if (!selected) return;
-
-    const exitPrice = toNum(exitPriceInput.value);
-    const holdingDays = Math.max(1, toNum(holdingDaysInput.value) || 0);
-
-    const metrics = Number.isFinite(exitPrice)
-      ? calculateMetrics(selected.entryPrice, exitPrice, selected.quantity, holdingDays)
-      : { pl: 0, pct: 0, daily: 0 };
-
-    setText('outEntry', currency(selected.entryPrice));
-    setText('outExit', currency(exitPrice));
-    setText('outQty', fmtQty(selected.quantity));
-    setText('outPL', currency(metrics.pl), metrics.pl >= 0 ? 'value-profit' : 'value-loss');
-    setText('outPct', `${metrics.pct.toFixed(2)}%`, metrics.pct >= 0 ? 'value-profit' : 'value-loss');
-    setText('outDays', String(Math.max(0, toNum(holdingDaysInput.value) || 0)));
-    setText('outDaily', currency(metrics.daily), metrics.daily >= 0 ? 'value-profit' : 'value-loss');
-  }
-
-  function calculateMetrics(entryPrice, exitPrice, qty, days) {
-    const pl = (exitPrice - entryPrice) * qty;
-    const invested = entryPrice * qty;
-    const pct = invested > 0 ? (pl / invested) * 100 : 0;
-    const daily = days > 0 ? pl / days : 0;
-    return { pl, pct, daily };
-  }
-
-  function renderSimulationRows() {
-    const rows = readJson(SIM_KEY);
-    simTableBody.innerHTML = '';
-    rows.forEach((row) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${escapeHtml(row.label || '')}</td>
-        <td>${currency(row.entryPrice)}</td>
-        <td>${currency(row.exitPrice)}</td>
-        <td>${fmtQty(row.quantity)}</td>
-        <td class="${row.pl >= 0 ? 'value-profit' : 'value-loss'}">${currency(row.pl)}</td>
-        <td class="${row.pct >= 0 ? 'value-profit' : 'value-loss'}">${toNum(row.pct).toFixed(2)}%</td>
-        <td>${Math.max(0, toNum(row.holdingDays) || 0)}</td>
-        <td class="${row.daily >= 0 ? 'value-profit' : 'value-loss'}">${currency(row.daily)}</td>
-      `;
-      simTableBody.appendChild(tr);
-    });
-  }
-
-  function setText(id, value, className = '') {
-    const node = document.getElementById(id);
-    if (!node) return;
-    node.textContent = value;
-    node.className = className;
-  }
-
-  function readJson(key) {
-    try {
-      return JSON.parse(localStorage.getItem(key) || '[]');
-    } catch {
-      return [];
+    if (action === 'exit') {
+      const exited = readJson(EXITED_KEY);
+      exited.push({ ...record, exitedAt: new Date().toISOString().slice(0, 10) });
+      localStorage.setItem(EXITED_KEY, JSON.stringify(exited));
+      removeRecord(record);
+      render();
     }
   }
 
-  function currency(value) {
-    const number = Number.isFinite(value) ? value : 0;
-    return `₨${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(number)}`;
+  function getActiveRecords() {
+    const tradeRows = readJson(TRADES_KEY).map((row) => ({
+      id: `t-${row.id}`,
+      rawId: row.id,
+      source: 'Trades',
+      name: row.script || 'Trade',
+      qty: Number(row.qty || 0),
+      price: Number(row.wacc || 0),
+      ref: 'trades',
+    }));
+
+    const sipState = JSON.parse(localStorage.getItem(SIP_STATE_KEY) || '{}');
+    const sipRows = [];
+    Object.entries(sipState.records || {}).forEach(([sipName, rows]) => {
+      rows.forEach((row) => {
+        sipRows.push({
+          id: `s-${sipName}-${row.id}`,
+          rawId: row.id,
+          sipName,
+          source: 'SIP',
+          name: sipName,
+          qty: Number(row.units || 0),
+          price: Number(row.nav || 0),
+          ref: 'sip',
+        });
+      });
+    });
+
+    return [...tradeRows, ...sipRows];
+  }
+
+  function updateRecord(record, qty, price) {
+    if (!Number.isFinite(qty) || !Number.isFinite(price) || qty <= 0 || price <= 0) return;
+
+    if (record.ref === 'trades') {
+      const rows = readJson(TRADES_KEY);
+      const row = rows.find((r) => r.id === record.rawId);
+      if (!row) return;
+      row.qty = qty;
+      row.wacc = price;
+      localStorage.setItem(TRADES_KEY, JSON.stringify(rows));
+      return;
+    }
+
+    const sipState = JSON.parse(localStorage.getItem(SIP_STATE_KEY) || '{}');
+    const rows = sipState.records?.[record.sipName] || [];
+    const row = rows.find((r) => r.id === record.rawId);
+    if (!row) return;
+    row.units = qty;
+    row.nav = price;
+    row.amount = qty * price;
+    localStorage.setItem(SIP_STATE_KEY, JSON.stringify(sipState));
+  }
+
+  function removeRecord(record) {
+    if (record.ref === 'trades') {
+      const rows = readJson(TRADES_KEY).filter((r) => r.id !== record.rawId);
+      localStorage.setItem(TRADES_KEY, JSON.stringify(rows));
+      return;
+    }
+
+    const sipState = JSON.parse(localStorage.getItem(SIP_STATE_KEY) || '{}');
+    sipState.records[record.sipName] = (sipState.records[record.sipName] || []).filter((r) => r.id !== record.rawId);
+    localStorage.setItem(SIP_STATE_KEY, JSON.stringify(sipState));
+  }
+
+  function readJson(key) {
+    try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
   }
 
   function fmtQty(value) {
-    const number = Number.isFinite(value) ? value : 0;
-    return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 4 }).format(number);
+    return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 4 }).format(value || 0);
   }
 
-  function toNum(v) {
-    return Number.parseFloat(v);
+  function currency(value) {
+    return `₨${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(value || 0)}`;
   }
 
   function escapeHtml(value) {
-    return String(value)
+    return String(value || '')
       .replaceAll('&', '&amp;')
       .replaceAll('<', '&lt;')
       .replaceAll('>', '&gt;')

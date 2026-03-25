@@ -22,9 +22,9 @@
     </nav>
   </header>
 
-  <main class="container" data-portfolio-key="longterm" data-portfolio-title="Long Term Holdings">
+  <main class="container" data-portfolio-key="longterm" data-portfolio-title="Long Term Holdings" data-show-ranges="false">
     <h1>Long Term Holdings</h1>
-    <p class="subtitle">Portfolio logic and calculations are identical across all portfolio pages.</p>
+    <p class="subtitle">Sell range is intentionally removed for long-term investments.</p>
 
     <section class="card section">
       <div class="summary-grid">
@@ -45,21 +45,18 @@
         <label>LTP<input data-next type="number" name="ltp" min="0" step="0.01" required /></label>
         <label>Qty<input data-next type="number" name="qty" min="0" step="1" required /></label>
         <label>WACC<input data-next type="number" name="wacc" min="0" step="0.01" required /></label>
-        <label>SELL1<input data-next type="number" name="sell1" min="0" step="0.01" required /></label>
         <button class="btn-primary" type="submit">Add Holding</button>
       </form>
     </section>
 
     <section class="card section">
       <div class="table-wrap">
-        <table id="portfolioTable">
+        <table id="portfolioTable" class="portfolio-table">
           <thead>
             <tr>
               <th data-sort="script">Script</th>
               <th data-sort="sector">Sector</th>
               <th data-sort="ltp">LTP</th>
-              <th data-sort="sell1">Sell Range (SELL1 - SELL2)</th>
-              <th data-sort="distance">Distance from sell range</th>
               <th data-sort="current">Current Value</th>
               <th data-sort="pl">Total P/L</th>
               <th data-sort="actions">Actions</th>
