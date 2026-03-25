@@ -19,6 +19,7 @@
   function bindRealtimeRefresh() {
     window.addEventListener('storage', renderDashboard);
     window.addEventListener('focus', renderDashboard);
+    window.addEventListener('pms-ltp-updated', renderDashboard);
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) renderDashboard();
     });

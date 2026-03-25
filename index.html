@@ -24,8 +24,16 @@
 
   <main class="container">
     <div id="chartTooltip" class="chart-tooltip"></div>
-    <h1>Homepage Dashboard</h1>
-    <p class="subtitle">NEPSE Portfolio Overview (NPR)</p>
+    <section class="page-heading">
+      <div>
+        <h1>Portfolio Management System</h1>
+        <p class="subtitle">NEPSE Portfolio Overview (NPR)</p>
+      </div>
+      <div class="page-heading-actions">
+        <button class="btn-primary" type="button" data-update-ltp-btn>Update LTP</button>
+        <span class="save-indicator" data-update-ltp-status>Ready</span>
+      </div>
+    </section>
 
     <section class="grid">
       <article class="card stat-card">
@@ -43,10 +51,6 @@
             <article class="card stat-card">
         <div class="stat-label">Portfolio Value (DP Holding)</div>
         <div class="stat-value" id="combinedTotal">Rs 0</div>
-      </article>
-      <article class="card stat-card">
-        <div class="stat-label">Cash Balance</div>
-        <div class="stat-value cash-balance-row"><span id="dashboardCashBalance">Rs 0</span><button type="button" id="dashboardCashEditBtn" class="btn-icon" title="Edit cash" aria-label="Edit cash balance">✏️</button></div>
       </article>
     </section>
 
@@ -103,6 +107,7 @@
   <script defer src="capital-manager.js"></script>
   <script type="module" src="firebase-sync.js"></script>
   <script defer src="data-recorder.js"></script>
+  <script defer src="ltp-updater.js"></script>
   <script defer src="script.js"></script>
 </body>
 </html>

@@ -38,6 +38,16 @@
       });
       const massBtn = document.getElementById('massEditBtn');
       if (massBtn) massBtn.addEventListener('click', openMassEdit);
+      window.addEventListener('pms-ltp-updated', () => {
+        rows = readRows();
+        render();
+      });
+      window.addEventListener('storage', (event) => {
+        if (!event || event.key === storageKey) {
+          rows = readRows();
+          render();
+        }
+      });
 
     }
 
