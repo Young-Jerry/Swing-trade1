@@ -145,9 +145,13 @@
     const values = points.map((p) => p.total);
     const minY = Math.min(0, ...values);
     const maxY = Math.max(0, ...values);
-    const yRange = (maxY - minY) || 1;
+    const spread = (maxY - minY) || 1;
+    const yPad = spread * 0.08;
+    const yMinPadded = minY - yPad;
+    const yMaxPadded = maxY + yPad;
+    const yRange = (yMaxPadded - yMinPadded) || 1;
     const toX = (i) => pad.left + (i / Math.max(points.length - 1, 1)) * plotW;
-    const toY = (v) => pad.top + (1 - ((v - minY) / yRange)) * plotH;
+    const toY = (v) => pad.top + (1 - ((v - yMinPadded) / yRange)) * plotH;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#0f1d2e';
@@ -158,11 +162,8 @@
     ctx.beginPath();
     ctx.moveTo(first.x, first.y);
     for (let i = 1; i < points.length; i += 1) {
-      const prev = drawPoint(i - 1);
       const curr = drawPoint(i);
-      const midX = (prev.x + curr.x) / 2;
-      ctx.quadraticCurveTo(prev.x, prev.y, midX, (prev.y + curr.y) / 2);
-      if (i === points.length - 1) ctx.quadraticCurveTo(curr.x, curr.y, curr.x, curr.y);
+      ctx.lineTo(curr.x, curr.y);
     }
     const stroke = points[points.length - 1].total >= 0 ? '#00e540' : '#ea5a5a';
     ctx.strokeStyle = stroke;
@@ -180,7 +181,7 @@
       const x = toX(i);
       const y = toY(p.total);
       ctx.beginPath();
-      ctx.arc(x, y, i === points.length - 1 ? 4 : 2.5, 0, Math.PI * 2);
+      ctx.arc(x, y, i === points.length - 1 ? 4.5 : 2.8, 0, Math.PI * 2);
       ctx.fillStyle = i === points.length - 1 ? '#ffffff' : stroke;
       ctx.fill();
     });
@@ -203,19 +204,12 @@
   }
 
   function exactProfit(row) {
-    if (Number.isFinite(Number(row.profit))) return Number(row.profit);
     const calc = window.PmsTradeMath
       ? window.PmsTradeMath.calculateRoundTrip({ buyPrice: row.buyPrice, soldPrice: row.soldPrice, qty: row.qty })
       : null;
-    return calc ? calc.profit : (Number(row.soldPrice || 0) - Number(row.buyPrice || 0)) * Number(row.qty || 0);
-  }
-
-  function exactInvested(row) {
-    if (Number.isFinite(Number(row.buyTotal))) return Number(row.buyTotal);
-    const calc = window.PmsTradeMath
-      ? window.PmsTradeMath.calculateRoundTrip({ buyPrice: row.buyPrice, soldPrice: row.soldPrice, qty: row.qty })
-      : null;
-    return calc ? calc.invested : Number(row.buyPrice || 0) * Number(row.qty || 0);
+    if (calc) return Number(calc.netProfit || calc.profit || 0);
+    const gross = (Number(row.soldPrice || 0) - Number(row.buyPrice || 0)) * Number(row.qty || 0);
+    return gross > 0 ? gross * 0.95 : gross;
   }
 
   function renderPie(parts, total) {
@@ -236,6 +230,7 @@
       return { color: colors[i], start, end: deg, part: p };
     });
     pie.style.background = `conic-gradient(${segments.map((s) => `${s.color} ${s.start}deg ${s.end}deg`).join(',')})`;
+    pie.style.setProperty('--pie-glow', colors[0]);
 
     legend.innerHTML = '';
     parts.forEach((p, i) => {
@@ -257,6 +252,7 @@
       const normalized = (angle + 450) % 360;
       const hit = segments.find((seg) => normalized >= seg.start && normalized < seg.end);
       if (!hit) return;
+      pie.style.setProperty('--pie-glow', hit.color);
       const pct = ((hit.part.value / total) * 100).toFixed(2);
       tooltip.textContent = `${hit.part.label}: ${currency(hit.part.value)} (${pct}%)`;
       tooltip.style.display = 'block';
