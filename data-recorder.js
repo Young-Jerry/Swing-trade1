@@ -54,6 +54,8 @@
     }
 
     function isTrackable(el) {
+      if (el.closest('[data-no-persist="true"]')) return false;
+      if (el.closest('#addForm, #installmentForm, #manualSipForm, #navForm')) return false;
       return !el.readOnly
         && !el.disabled
         && !['button', 'submit', 'reset', 'image', 'file', 'hidden'].includes(el.type);

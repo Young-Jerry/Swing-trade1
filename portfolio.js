@@ -19,6 +19,7 @@
     let indicatorTimer;
 
     bindEvents();
+    clearEntryForm();
     render();
 
     function bindEvents() {
@@ -34,6 +35,18 @@
           }
           render();
         });
+      });
+    }
+
+    function clearEntryForm() {
+      form.reset();
+      form.querySelectorAll('input, select, textarea').forEach((el) => {
+        if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+          if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
+          else el.value = '';
+        } else if (el instanceof HTMLSelectElement) {
+          el.selectedIndex = 0;
+        }
       });
     }
 
@@ -99,6 +112,7 @@
         const tr = document.createElement('tr');
         tr.appendChild(editableCell(row, 'script', row.script, 'text', { transform: 'upper' }));
         tr.appendChild(editableCell(row, 'sector', row.sector, 'text'));
+        tr.appendChild(editableCell(row, 'qty', row.qty, 'number'));
         tr.appendChild(ltpCell(row));
         if (showRanges) {
           tr.appendChild(rangeCell(row));
@@ -120,11 +134,13 @@
       input.type = type === 'number' ? 'number' : 'text';
       if (type === 'number') {
         input.min = '0';
-        input.step = '0.01';
+        input.step = key === 'qty' ? '1' : '0.01';
       }
 
       input.addEventListener('blur', () => {
-        const newValue = type === 'number' ? num(input.value) : clean(input.value);
+        const newValue = type === 'number'
+          ? (key === 'qty' ? Math.floor(num(input.value)) : num(input.value))
+          : clean(input.value);
         if (type === 'number' && !Number.isFinite(newValue)) return;
         row[key] = opts.transform === 'upper' ? String(newValue).toUpperCase() : newValue;
         persist();
@@ -240,6 +256,7 @@
           case 'script': return obj.script.toLowerCase();
           case 'sector': return obj.sector.toLowerCase();
           case 'ltp': return obj.ltp;
+          case 'qty': return obj.qty;
           case 'sell1': return obj.sell1;
           case 'current': return obj.ltp * obj.qty;
           case 'pl': return (obj.ltp - obj.wacc) * obj.qty;
