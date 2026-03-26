@@ -15,6 +15,7 @@
     const holdingDaysInput = document.getElementById('holdingDays');
     const exitedBody = document.querySelector('#exitedTable tbody');
     const pastTradeFilter = document.getElementById('pastTradeFilter');
+    const pastTradeMetrics = document.getElementById('pastTradeMetrics');
 
     if (!exitForm || !exitType || !exitRecord || !soldPriceInput || !exitedBody) return;
 
@@ -97,16 +98,18 @@
 
       const keyword = String(pastTradeFilter ? pastTradeFilter.value : '').trim().toLowerCase();
       const filtered = exited.filter((row) => !keyword || String(row.name || '').toLowerCase().includes(keyword));
+      renderExitedSummary(filtered);
       filtered.forEach((row) => {
         const normalized = normalizeExited(row);
         const tr = document.createElement('tr');
+        const soldTotal = Number(normalized.soldTotal || 0);
         tr.innerHTML = `
           <td>${normalized.type}</td>
           <td>${escapeHtml(normalized.name)}</td>
-          <td>${currency(normalized.buyPrice)}</td>
-          <td>${currency(normalized.soldPrice || normalized.currentPrice || 0)}</td>
+          <td title="Buy Price × Quantity">${currency(normalized.buyTotal)}</td>
+          <td title="Sold Price × Quantity">${currency(soldTotal)}</td>
           <td class="${profitClass(normalized.profit)}">${currency(normalized.profit)}</td>
-          <td>${currency(normalized.totalTaxPaid)}</td>
+          <td class="value-loss">${currency(normalized.totalTaxPaid)}</td>
           <td class="${profitClass(normalized.moneyReceivable)}">${currency(normalized.moneyReceivable)}</td>
           <td>${normalized.holdingDays}</td>
           <td class="actions-cell">
@@ -137,6 +140,27 @@
         tr.innerHTML = '<td colspan="9">No exited trades yet.</td>';
         exitedBody.appendChild(tr);
       }
+    }
+
+    function renderExitedSummary(rows) {
+      if (!pastTradeMetrics) return;
+      const normalizedRows = rows.map(normalizeExited);
+      const totals = normalizedRows.reduce((acc, row) => {
+        acc.buyTotal += Number(row.buyTotal || 0);
+        acc.soldTotal += Number(row.soldTotal || 0);
+        acc.profit += Number(row.profit || 0);
+        acc.tax += Number(row.totalTaxPaid || 0);
+        acc.receivable += Number(row.moneyReceivable || 0);
+        return acc;
+      }, { buyTotal: 0, soldTotal: 0, profit: 0, tax: 0, receivable: 0 });
+
+      pastTradeMetrics.innerHTML = `
+        ${metricCard('Buy Total', totals.buyTotal)}
+        ${metricCard('Sold x Qty Total', totals.soldTotal)}
+        ${metricCard('Total Profit', totals.profit, profitClass(totals.profit))}
+        ${metricCard('Total Tax (red)', totals.tax, 'value-loss')}
+        ${metricCard('Total Receivable', totals.receivable, profitClass(totals.receivable))}
+      `;
     }
 
     function editExited(id) {
@@ -272,6 +296,7 @@
         ...row,
         capitalGainTax,
         profit,
+        soldTotal: Number(calc.realizedAmount || row.soldTotal || 0),
         totalTaxPaid,
         buyTotal: Number(calc.invested || row.buyTotal || 0),
         netSoldTotal: Number(calc.netRealizedAmount || row.netSoldTotal || row.soldTotal || 0),
@@ -318,6 +343,15 @@
 
     function profitClass(value) {
       return Number(value || 0) >= 0 ? 'value-profit' : 'value-loss';
+    }
+
+    function metricCard(label, value, className = '') {
+      return `
+        <article class="summary-item metric-pop">
+          <p class="stat-label">${label}</p>
+          <p class="stat-value ${className}">${currency(value)}</p>
+        </article>
+      `;
     }
 
     function escapeHtml(value) {

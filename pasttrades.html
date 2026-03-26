@@ -24,8 +24,13 @@
   </header>
 
   <main class="container">
-    <h1>Portfolio Management System</h1>
-    <p class="subtitle">Select type → select record → enter sold price and holding days → exit.</p>
+    <section class="page-hero card">
+      <div>
+        <h1>Past Trades Studio</h1>
+        <p class="subtitle">Select type → pick a record → enter sold price + holding days → exit with auto-calculated totals.</p>
+      </div>
+      <div class="hero-badge">✨ Interactive + Animated</div>
+    </section>
 
     <section class="card section">
       <h3>Exit Position</h3>
@@ -56,10 +61,11 @@
 
     <section class="card section">
       <div class="toolbar"><h3>Exited Trades</h3></div>
+      <div id="pastTradeMetrics" class="summary-grid pasttrade-metrics"></div>
       <div class="table-wrap">
         <table id="exitedTable">
           <thead>
-            <tr><th>Type</th><th>Name</th><th>Buy</th><th>Sold</th><th>Profit</th><th>Total Tax Paid</th><th>Money Receivable</th><th>Holding Days</th><th>Actions</th></tr>
+            <tr><th>Type</th><th>Name</th><th>Buy Total</th><th>Sold x Qty</th><th>Total Profit</th><th>Tax (red)</th><th>Receivable</th><th>Holding Days</th><th>Actions</th></tr>
           </thead>
           <tbody></tbody>
         </table>
