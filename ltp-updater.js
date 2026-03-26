@@ -1,6 +1,7 @@
 (() => {
   const API_URL = 'https://nepsetty.kokomo.workers.dev/api/stock';
   const TARGET_KEYS = ['trades', 'longterm'];
+  const SCRIPT_CACHE_KEY = 'portfolioScripts';
 
   function normalizeSymbol(value) {
     return String(value || '')
@@ -19,6 +20,24 @@
     const payload = await response.json();
     const ltp = Number(payload?.ltp);
     return Number.isFinite(ltp) ? ltp : null;
+  }
+
+  function collectPortfolioScripts() {
+    const scripts = [];
+
+    for (const key of TARGET_KEYS) {
+      const parsed = JSON.parse(localStorage.getItem(key) || '[]');
+      if (!Array.isArray(parsed) || !parsed.length) continue;
+
+      parsed.forEach((row) => {
+        const script = normalizeSymbol(row.script || row.symbol || row.ticker);
+        if (script) scripts.push(script);
+      });
+    }
+
+    const uniqueScripts = [...new Set(scripts)];
+    localStorage.setItem(SCRIPT_CACHE_KEY, JSON.stringify(uniqueScripts));
+    return uniqueScripts;
   }
 
   function updateRowWithLtp(row, ltp) {
@@ -40,30 +59,25 @@
 
   async function applyGlobalLtpUpdate() {
     let totalUpdated = 0;
+    const scripts = collectPortfolioScripts();
+    const symbolToLtp = new Map();
+
+    await Promise.all(
+      scripts.map(async (script) => {
+        try {
+          const ltp = await fetchLtpBySymbol(script);
+          if (Number.isFinite(ltp)) {
+            symbolToLtp.set(script, ltp);
+          }
+        } catch (error) {
+          console.warn(`Unable to fetch LTP for ${script}:`, error);
+        }
+      })
+    );
 
     for (const key of TARGET_KEYS) {
       const parsed = JSON.parse(localStorage.getItem(key) || '[]');
       if (!Array.isArray(parsed) || !parsed.length) continue;
-
-      const symbolSet = new Set(
-        parsed
-          .map((row) => normalizeSymbol(row.script || row.symbol || row.ticker))
-          .filter(Boolean)
-      );
-
-      const symbolToLtp = new Map();
-      await Promise.all(
-        [...symbolSet].map(async (symbol) => {
-          try {
-            const ltp = await fetchLtpBySymbol(symbol);
-            if (Number.isFinite(ltp)) {
-              symbolToLtp.set(symbol, ltp);
-            }
-          } catch (error) {
-            console.warn(`Unable to fetch LTP for ${symbol}:`, error);
-          }
-        })
-      );
 
       let changed = false;
       const nextRows = parsed.map((row) => {
@@ -102,7 +116,7 @@
       try {
         const updatedCount = await applyGlobalLtpUpdate();
         if (statusNode) {
-          statusNode.textContent = `Updated ${updatedCount} holding(s) from ${API_URL}?symbol=SCRIPT_SYMBOL`;
+          statusNode.textContent = `Updated ${updatedCount} holding(s) from ${API_URL}?symbol=<SCRIPT>`;
           statusNode.classList.remove('value-loss');
           statusNode.classList.add('value-profit');
         }
@@ -123,6 +137,7 @@
 
   window.PmsLtpUpdater = {
     applyGlobalLtpUpdate,
+    collectPortfolioScripts,
     fetchLtpBySymbol,
     normalizeSymbol,
   };
