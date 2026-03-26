@@ -2,6 +2,10 @@
   const API_URL = 'https://nepsetty.kokomo.workers.dev/api/stock';
   const TARGET_KEYS = ['trades', 'longterm'];
 
+
+  function normalizeSymbol(value) {
+    return String(value || '')
+      .toUpperCase()
   function normalizeText(value) {
     return String(value || '')
       .toUpperCase()
@@ -46,6 +50,7 @@
 
       const symbolSet = new Set(
         parsed
+          .map((row) => normalizeSymbol(row.script))
           .map((row) => normalizeText(row.script))
           .filter(Boolean)
       );
@@ -62,6 +67,7 @@
 
       let changed = false;
       const nextRows = parsed.map((row) => {
+        const symbol = normalizeSymbol(row.script);
         const symbol = normalizeText(row.script);
         const matchedLtp = symbolToLtp.get(symbol);
         if (!Number.isFinite(matchedLtp)) return row;
@@ -94,7 +100,7 @@
       try {
         const updatedCount = await applyGlobalLtpUpdate();
         if (statusNode) {
-          statusNode.textContent = `Updated ${updatedCount} holding(s) from live closing prices.`;
+          statusNode.textContent = `Updated ${updatedCount} holding(s) from live API prices.`;
           statusNode.classList.remove('value-loss');
           statusNode.classList.add('value-profit');
         }
@@ -115,6 +121,7 @@
 
   window.PmsLtpUpdater = {
     applyGlobalLtpUpdate,
+    normalizeSymbol,
     normalizeText,
   };
 
