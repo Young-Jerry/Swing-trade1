@@ -39,9 +39,15 @@
     };
   }
 
+  const SHORT_TERM_CAPITAL_GAIN_TAX_RATE = 0.075;
+  const LONG_TERM_CAPITAL_GAIN_TAX_RATE = 0.05;
+  const LONG_TERM_HOLDING_DAYS = 365;
+
   function capitalGainTaxRate(holdingDays = 0) {
     const days = Math.max(0, Math.floor(Number(holdingDays || 0)));
-    return days > 365 ? 0.075 : 0.05;
+    return days > LONG_TERM_HOLDING_DAYS
+      ? LONG_TERM_CAPITAL_GAIN_TAX_RATE
+      : SHORT_TERM_CAPITAL_GAIN_TAX_RATE;
   }
 
   function calculateRoundTrip({ buyPrice, soldPrice, qty, buyIsWacc = true, holdingDays = 0 }) {
