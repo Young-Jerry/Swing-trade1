@@ -228,36 +228,39 @@
       editBtn.className = 'btn-secondary';
       editBtn.textContent = '✏️';
       editBtn.onclick = () => {
-        const previousCost = investedCost(row.wacc, row.qty);
-        const qty = prompt('Quantity', String(row.qty));
-        if (qty === null) return;
-        const wacc = prompt('WACC', String(row.wacc));
-        if (wacc === null) return;
-        row.qty = num(qty) || row.qty;
-        row.wacc = num(wacc) || row.wacc;
-        const newCost = investedCost(row.wacc, row.qty);
-        if (window.PmsCapital) window.PmsCapital.adjustCash(previousCost - newCost);
-        persist();
+        openQuickEdit(row);
       };
 
       const delBtn = document.createElement('button');
       delBtn.className = 'btn-danger';
       delBtn.textContent = '🗑️';
       delBtn.onclick = () => {
-        if (!confirm('Delete this row?')) return;
-        const refund = investedCost(row.wacc, row.qty);
-        if (window.PmsCapital) window.PmsCapital.adjustCash(refund);
-        rows = rows.filter((r) => r.id !== row.id);
-        persist('Deleted ✓');
+        openConfirmDialog({
+          title: 'Delete Position',
+          message: `Delete ${row.script}?`,
+          confirmText: 'Delete',
+          onConfirm: () => {
+            const refund = investedCost(row.wacc, row.qty);
+            if (window.PmsCapital) window.PmsCapital.adjustCash(refund);
+            rows = rows.filter((r) => r.id !== row.id);
+            persist('Deleted ✓');
+          },
+        });
       };
 
-      td.append(editBtn, delBtn);
+      const exitBtn = document.createElement('button');
+      exitBtn.className = 'btn-secondary';
+      exitBtn.textContent = '🧾';
+      exitBtn.title = 'Exit to Past Trades';
+      exitBtn.onclick = () => openExitDialog(row);
+
+      td.append(editBtn, delBtn, exitBtn);
       return td;
     }
 
     function openMassEdit() {
       const backdrop = document.createElement('div');
-      backdrop.className = 'modal';
+      backdrop.className = 'modal modal-fullscreen';
       const card = document.createElement('section');
       card.className = 'card modal-card mass-edit-modal';
       card.innerHTML = `
@@ -321,6 +324,123 @@
         persist('Mass update saved ✓');
         backdrop.remove();
       });
+    }
+
+    function openQuickEdit(row) {
+      const previousCost = investedCost(row.wacc, row.qty);
+      const backdrop = buildModal({
+        title: `Edit ${row.script}`,
+        subtitle: 'Update quantity and WACC.',
+        body: `
+          <label>Quantity
+            <input type="number" min="0" step="1" data-field="qty" value="${Math.floor(row.qty)}" />
+          </label>
+          <label>WACC
+            <input type="number" min="0" step="0.01" data-field="wacc" value="${fmt2(row.wacc)}" />
+          </label>
+        `,
+        actions: `<button class="btn-primary" type="button" data-confirm="true">Save</button>`,
+      });
+      const card = backdrop.querySelector('.modal-card');
+      card.querySelector('[data-confirm="true"]').addEventListener('click', () => {
+        const qty = Math.max(0, Math.floor(num(card.querySelector('[data-field="qty"]').value) || 0));
+        const wacc = Math.max(0, num(card.querySelector('[data-field="wacc"]').value) || 0);
+        row.qty = qty;
+        row.wacc = wacc;
+        const newCost = investedCost(row.wacc, row.qty);
+        if (window.PmsCapital) window.PmsCapital.adjustCash(previousCost - newCost);
+        persist();
+        backdrop.remove();
+      });
+    }
+
+    function openExitDialog(row) {
+      const backdrop = buildModal({
+        title: `Exit ${row.script}`,
+        subtitle: 'Move this position to Past Trades.',
+        body: `
+          <label>Old Price
+            <input type="number" min="0.01" step="0.01" data-field="soldPrice" required />
+          </label>
+          <label>Holding Days
+            <input type="number" min="0" step="1" data-field="holdingDays" required />
+          </label>
+        `,
+        actions: `<button class="btn-primary" type="button" data-confirm="true">Exit Selected</button>`,
+      });
+      const card = backdrop.querySelector('.modal-card');
+      card.querySelector('[data-confirm="true"]').addEventListener('click', () => {
+        const soldPrice = num(card.querySelector('[data-field="soldPrice"]').value);
+        const holdingDays = Math.floor(num(card.querySelector('[data-field="holdingDays"]').value));
+        if (!Number.isFinite(soldPrice) || soldPrice <= 0 || !Number.isFinite(holdingDays) || holdingDays < 0) return;
+        exitToPastTrades(row, soldPrice, holdingDays);
+        backdrop.remove();
+      });
+    }
+
+    function exitToPastTrades(row, soldPrice, holdingDays) {
+      const calc = tradeMath().calculateRoundTrip({
+        buyPrice: row.wacc,
+        soldPrice,
+        qty: row.qty,
+      });
+      const exited = readJson('exitedTradesV2');
+      exited.push({
+        id: crypto.randomUUID(),
+        type: storageKey === 'longterm' ? 'Long Term' : 'Trade',
+        name: row.script || 'Trade',
+        qty: row.qty,
+        buyPrice: row.wacc,
+        soldPrice,
+        buyTotal: calc.invested,
+        soldTotal: calc.realizedAmount,
+        netSoldTotal: Number(calc.netRealizedAmount || calc.realizedAmount || 0),
+        grossProfit: Number(calc.grossProfit || calc.profit || 0),
+        capitalGainTax: Number(calc.capitalGainTax || 0),
+        profit: Number(calc.netProfit || calc.profit || 0),
+        perDayProfit: holdingDays > 0 ? Number(calc.netProfit || calc.profit || 0) / holdingDays : Number(calc.netProfit || calc.profit || 0),
+        holdingDays,
+      });
+      localStorage.setItem('exitedTradesV2', JSON.stringify(exited));
+      if (window.PmsCapital) window.PmsCapital.adjustCash(Number(calc.netRealizedAmount || calc.realizedAmount || 0));
+      rows = rows.filter((r) => r.id !== row.id);
+      persist('Exited ✓');
+    }
+
+    function openConfirmDialog({ title, message, confirmText, onConfirm }) {
+      const backdrop = buildModal({
+        title,
+        subtitle: message,
+        body: '',
+        actions: `<button class="btn-danger" type="button" data-confirm="true">${confirmText}</button>`,
+      });
+      backdrop.querySelector('[data-confirm="true"]').addEventListener('click', () => {
+        onConfirm();
+        backdrop.remove();
+      });
+    }
+
+    function buildModal({ title, subtitle, body, actions }) {
+      const backdrop = document.createElement('div');
+      backdrop.className = 'modal modal-fullscreen';
+      const card = document.createElement('section');
+      card.className = 'card modal-card';
+      card.innerHTML = `
+        <div class="toolbar modal-head">
+          <div>
+            <h3>${title}</h3>
+            ${subtitle ? `<p class="subtitle">${subtitle}</p>` : ''}
+          </div>
+          <button type="button" class="btn-danger" data-close="true">Close</button>
+        </div>
+        <div class="modal-body">${body}</div>
+        <div class="toolbar modal-actions">${actions || ''}</div>
+      `;
+      backdrop.appendChild(card);
+      document.body.appendChild(backdrop);
+      card.querySelector('[data-close="true"]').addEventListener('click', () => backdrop.remove());
+      backdrop.addEventListener('click', (e) => { if (e.target === backdrop) backdrop.remove(); });
+      return backdrop;
     }
 
     function updateSummary() {
@@ -390,6 +510,20 @@
         : null;
       if (calc && Number.isFinite(calc.totalPayable)) return calc.totalPayable;
       return Number(price || 0) * Number(qty || 0);
+    }
+
+    function tradeMath() {
+      return window.PmsTradeMath || {
+        calculateRoundTrip: ({ buyPrice, soldPrice, qty }) => ({
+          invested: Number(buyPrice || 0) * Number(qty || 0),
+          realizedAmount: Number(soldPrice || 0) * Number(qty || 0),
+          profit: (Number(soldPrice || 0) - Number(buyPrice || 0)) * Number(qty || 0),
+        }),
+      };
+    }
+
+    function readJson(key) {
+      try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
     }
   };
 

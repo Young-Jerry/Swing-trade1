@@ -100,7 +100,7 @@
           <td>${currency(normalized.buyPrice)}</td>
           <td>${currency(normalized.soldPrice || normalized.currentPrice || 0)}</td>
           <td class="${profitClass(normalized.profit)}">${currency(normalized.profit)}<div class="subtitle">Tax: ${currency(normalized.capitalGainTax || 0)}</div></td>
-          <td class="${profitClass(normalized.perDayProfit)}">${currency(normalized.perDayProfit)}</td>
+          <td class="${profitClass(normalized.moneyReceivable)}">${currency(normalized.moneyReceivable)}</td>
           <td>${Math.floor(Number(normalized.holdingDays || 0))}</td>
           <td class="actions-cell">
             <button class="btn-secondary" data-action="edit" data-id="${normalized.id}">✏️</button>
@@ -130,28 +130,47 @@
       const row = exited.find((item) => item.id === id);
       if (!row) return;
       const normalized = normalizeExited(row);
-
-      const holdingDays = prompt('Holding Days', String(normalized.holdingDays));
-      if (holdingDays === null) return;
-      const parsed = Math.floor(Number(holdingDays));
-      if (!Number.isFinite(parsed) || parsed < 0) return;
-
-      row.holdingDays = parsed;
-      row.profit = normalized.profit;
-      row.capitalGainTax = normalized.capitalGainTax;
-      row.perDayProfit = parsed > 0 ? normalized.profit / parsed : normalized.profit;
-      row.netSoldTotal = normalized.netSoldTotal;
-      localStorage.setItem(EXITED_KEY, JSON.stringify(exited));
-      renderExited();
+      const backdrop = buildModal({
+        title: `Edit ${normalized.name}`,
+        subtitle: 'Update holding days.',
+        body: `
+          <label>Holding Days
+            <input type="number" min="0" step="1" data-field="holdingDays" value="${normalized.holdingDays}" />
+          </label>
+        `,
+        actions: `<button class="btn-primary" type="button" data-confirm="true">Save</button>`,
+      });
+      const card = backdrop.querySelector('.modal-card');
+      card.querySelector('[data-confirm="true"]').addEventListener('click', () => {
+        const parsed = Math.floor(Number(card.querySelector('[data-field="holdingDays"]').value));
+        if (!Number.isFinite(parsed) || parsed < 0) return;
+        row.holdingDays = parsed;
+        row.profit = normalized.profit;
+        row.capitalGainTax = normalized.capitalGainTax;
+        row.perDayProfit = parsed > 0 ? normalized.profit / parsed : normalized.profit;
+        row.netSoldTotal = normalized.netSoldTotal;
+        localStorage.setItem(EXITED_KEY, JSON.stringify(exited));
+        renderExited();
+        backdrop.remove();
+      });
     }
 
     function deleteExited(id) {
-      const current = readJson(EXITED_KEY);
-      const target = current.find((row) => row.id === id);
-      if (target && window.PmsCapital) window.PmsCapital.adjustCash(-Number(target.netSoldTotal || target.soldTotal || 0));
-      const exited = current.filter((row) => row.id !== id);
-      localStorage.setItem(EXITED_KEY, JSON.stringify(exited));
-      renderExited();
+      const backdrop = buildModal({
+        title: 'Delete Exited Trade',
+        subtitle: 'This will remove the record and reverse the credited cash.',
+        body: '',
+        actions: `<button class="btn-danger" type="button" data-confirm="true">Delete</button>`,
+      });
+      backdrop.querySelector('[data-confirm="true"]').addEventListener('click', () => {
+        const current = readJson(EXITED_KEY);
+        const target = current.find((row) => row.id === id);
+        if (target && window.PmsCapital) window.PmsCapital.adjustCash(-Number(target.netSoldTotal || target.soldTotal || 0));
+        const exited = current.filter((row) => row.id !== id);
+        localStorage.setItem(EXITED_KEY, JSON.stringify(exited));
+        renderExited();
+        backdrop.remove();
+      });
     }
 
     function getActiveRecords(type) {
@@ -215,10 +234,35 @@
         ...row,
         capitalGainTax,
         profit,
+        buyTotal: Number(calc.invested || row.buyTotal || 0),
         netSoldTotal: Number(calc.netRealizedAmount || row.netSoldTotal || row.soldTotal || 0),
         perDayProfit: holdingDays > 0 ? profit / holdingDays : profit,
+        moneyReceivable: Number(calc.invested || row.buyTotal || 0) + profit,
         holdingDays,
       };
+    }
+
+    function buildModal({ title, subtitle, body, actions }) {
+      const backdrop = document.createElement('div');
+      backdrop.className = 'modal modal-fullscreen';
+      const card = document.createElement('section');
+      card.className = 'card modal-card';
+      card.innerHTML = `
+        <div class="toolbar modal-head">
+          <div>
+            <h3>${title}</h3>
+            ${subtitle ? `<p class="subtitle">${subtitle}</p>` : ''}
+          </div>
+          <button type="button" class="btn-danger" data-close="true">Close</button>
+        </div>
+        <div class="modal-body">${body}</div>
+        <div class="toolbar modal-actions">${actions || ''}</div>
+      `;
+      backdrop.appendChild(card);
+      document.body.appendChild(backdrop);
+      card.querySelector('[data-close="true"]').addEventListener('click', () => backdrop.remove());
+      backdrop.addEventListener('click', (e) => { if (e.target === backdrop) backdrop.remove(); });
+      return backdrop;
     }
 
     function readJson(key) {
