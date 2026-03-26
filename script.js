@@ -323,6 +323,7 @@
     `;
 
     const paths = [...pie.querySelectorAll('path[data-idx]')];
+    const summaryCards = [...document.querySelectorAll('.stat-card[data-summary-card]')];
     legend.innerHTML = '';
 
     parts.forEach((part, index) => {
@@ -342,6 +343,9 @@
       legend.querySelectorAll('li').forEach((item) => {
         item.classList.toggle('active', Number(item.dataset.idx) === idx);
       });
+      summaryCards.forEach((card) => {
+        card.classList.toggle('linked-hover', card.dataset.summaryCard === segments[idx]?.part?.label);
+      });
       const hit = segments[idx];
       if (hit) pie.style.setProperty('--pie-glow', hit.color);
     };
@@ -349,7 +353,10 @@
     const clearActive = () => {
       paths.forEach((path) => path.classList.remove('active', 'inactive'));
       legend.querySelectorAll('li').forEach((item) => item.classList.remove('active'));
+      summaryCards.forEach((card) => card.classList.remove('linked-hover'));
       pie.style.setProperty('--pie-glow', COLORS[0]);
+      pie.style.setProperty('--tilt-x', '0deg');
+      pie.style.setProperty('--tilt-y', '0deg');
     };
 
     pie.onmousemove = (event) => {
@@ -358,12 +365,17 @@
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
       const angleRad = Math.atan2(event.clientY - centerY, event.clientX - centerX);
-      const distance = Math.sqrt((event.clientX - centerX) ** 2 + (event.clientY - centerY) ** 2);
+      const deltaX = event.clientX - centerX;
+      const deltaY = event.clientY - centerY;
+      const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
       const normalized = ((angleRad * 180) / Math.PI + 450) % 360;
       const inside = distance <= rect.width / 2;
       const hit = inside
         ? segments.find((segment) => normalized >= segment.start * 360 && normalized < segment.end * 360)
         : null;
+
+      pie.style.setProperty('--tilt-x', `${Math.max(-8, Math.min(8, -deltaY / 16))}deg`);
+      pie.style.setProperty('--tilt-y', `${Math.max(-8, Math.min(8, deltaX / 16))}deg`);
 
       if (!hit) {
         tooltip.style.display = 'none';

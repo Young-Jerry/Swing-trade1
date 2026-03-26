@@ -92,7 +92,7 @@
         <span class="cash-widget-label">Cash Balance</span>
         <strong id="topCashBalance">Rs 0</strong>
       </div>
-      <a id="topCashLedgerBtn" class="btn-secondary btn-link" href="cash_ledger.html" title="Open cash ledger" aria-label="Open cash ledger">💵</a>
+      <a id="topCashLedgerBtn" class="btn-cash btn-link" href="cash_ledger.html" title="Open cash ledger" aria-label="Open cash ledger">💵</a>
     `;
     nav.appendChild(wrap);
   }

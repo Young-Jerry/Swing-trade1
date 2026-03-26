@@ -95,9 +95,8 @@
       exitedBody.innerHTML = '';
 
       const keyword = String(pastTradeFilter ? pastTradeFilter.value : '').trim().toLowerCase();
-      exited
-        .filter((row) => !keyword || String(row.name || '').toLowerCase().includes(keyword))
-        .forEach((row) => {
+      const filtered = exited.filter((row) => !keyword || String(row.name || '').toLowerCase().includes(keyword));
+      filtered.forEach((row) => {
         const normalized = normalizeExited(row);
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -125,13 +124,13 @@
       });
 
       if (window.PmsAllocation) {
-        window.PmsAllocation.renderAllocation('pastTradesAllocation', exited.map((row) => ({
+        window.PmsAllocation.renderAllocation('pastTradesAllocation', filtered.map((row) => ({
           script: row.name,
           value: Number(row.netSoldTotal || row.soldTotal || 0),
         })));
       }
 
-      if (!exited.length) {
+      if (!filtered.length) {
         const tr = document.createElement('tr');
         tr.innerHTML = '<td colspan="8">No exited trades yet.</td>';
         exitedBody.appendChild(tr);

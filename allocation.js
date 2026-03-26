@@ -21,6 +21,7 @@
   function renderAllocation(targetId, rows = []) {
     const target = document.getElementById(targetId);
     if (!target) return;
+    const tooltip = ensureTooltip();
 
     const normalized = normalizeRows(rows);
     if (!normalized.length) {
@@ -60,22 +61,92 @@
           `).join('')}
         </ul>
       </div>
-      <div class="allocation-table-wrap">
-        <table class="allocation-table">
-          <thead>
-            <tr><th>Script</th><th>Value</th><th>Allocation</th></tr>
-          </thead>
-          <tbody>
-            ${segments.map((row) => `
-              <tr><td>${row.script}</td><td>${currency(row.value)}</td><td>${row.percent.toFixed(2)}%</td></tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
     `;
+
+    const pie = target.querySelector('.allocation-pie');
+    const paths = [...target.querySelectorAll('path[data-idx]')];
+    const legendRows = [...target.querySelectorAll('.allocation-legend li')];
+    if (!pie) return;
+
+    const activateSegment = (idx) => {
+      paths.forEach((path) => {
+        const active = Number(path.dataset.idx) === idx;
+        path.classList.toggle('active', active);
+        path.classList.toggle('inactive', !active);
+      });
+      legendRows.forEach((item) => {
+        item.classList.toggle('active', Number(item.dataset.idx) === idx);
+      });
+      const hit = segments[idx];
+      if (hit) pie.style.setProperty('--pie-glow', hit.color);
+    };
+
+    const clearActive = () => {
+      paths.forEach((path) => path.classList.remove('active', 'inactive'));
+      legendRows.forEach((item) => item.classList.remove('active'));
+      pie.style.setProperty('--pie-glow', COLORS[0]);
+      pie.style.setProperty('--tilt-x', '0deg');
+      pie.style.setProperty('--tilt-y', '0deg');
+      if (tooltip) tooltip.style.display = 'none';
+    };
+
+    pie.onmousemove = (event) => {
+      const rect = pie.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const deltaX = event.clientX - centerX;
+      const deltaY = event.clientY - centerY;
+      const angleRad = Math.atan2(deltaY, deltaX);
+      const distance = Math.sqrt((deltaX ** 2) + (deltaY ** 2));
+      const normalized = ((angleRad * 180) / Math.PI + 450) % 360;
+      const inside = distance <= rect.width / 2;
+      const hit = inside
+        ? segments.find((segment) => normalized >= segment.start * 360 && normalized < segment.end * 360)
+        : null;
+
+      pie.style.setProperty('--tilt-x', `${Math.max(-8, Math.min(8, -deltaY / 16))}deg`);
+      pie.style.setProperty('--tilt-y', `${Math.max(-8, Math.min(8, deltaX / 16))}deg`);
+
+      if (!hit) {
+        clearActive();
+        return;
+      }
+
+      activateSegment(hit.idx);
+      if (tooltip) {
+        tooltip.textContent = `${hit.script}: ${currency(hit.value)} (${hit.percent.toFixed(2)}%)`;
+        tooltip.style.display = 'block';
+        tooltip.style.left = `${event.pageX + 10}px`;
+        tooltip.style.top = `${event.pageY + 10}px`;
+      }
+    };
+
+    pie.onmouseleave = clearActive;
+    legendRows.forEach((item) => {
+      item.addEventListener('mouseenter', (event) => {
+        const idx = Number(item.dataset.idx);
+        activateSegment(idx);
+        const hit = segments[idx];
+        if (hit && tooltip) {
+          tooltip.textContent = `${hit.script}: ${currency(hit.value)} (${hit.percent.toFixed(2)}%)`;
+          tooltip.style.display = 'block';
+          tooltip.style.left = `${event.pageX + 10}px`;
+          tooltip.style.top = `${event.pageY + 10}px`;
+        }
+      });
+      item.addEventListener('mousemove', (event) => {
+        if (!tooltip || tooltip.style.display !== 'block') return;
+        tooltip.style.left = `${event.pageX + 10}px`;
+        tooltip.style.top = `${event.pageY + 10}px`;
+      });
+      item.addEventListener('mouseleave', clearActive);
+    });
   }
 
   function piePath(segment) {
+    if (segment.end - segment.start >= 0.9999) {
+      return `<circle data-idx="${segment.idx}" cx="0" cy="0" r="100" fill="${segment.color}"></circle>`;
+    }
     const startAngle = (segment.start * Math.PI * 2) - Math.PI / 2;
     const endAngle = (segment.end * Math.PI * 2) - Math.PI / 2;
     const radius = 100;
@@ -86,7 +157,17 @@
     const y2 = Math.sin(endAngle) * radius;
     const largeArc = segment.end - segment.start > 0.5 ? 1 : 0;
 
-    return `<path d="M 0 0 L ${x1.toFixed(3)} ${y1.toFixed(3)} A ${radius} ${radius} 0 ${largeArc} 1 ${x2.toFixed(3)} ${y2.toFixed(3)} Z" fill="${segment.color}"></path>`;
+    return `<path data-idx="${segment.idx}" d="M 0 0 L ${x1.toFixed(3)} ${y1.toFixed(3)} A ${radius} ${radius} 0 ${largeArc} 1 ${x2.toFixed(3)} ${y2.toFixed(3)} Z" fill="${segment.color}"></path>`;
+  }
+
+  function ensureTooltip() {
+    let tooltip = document.getElementById('chartTooltip');
+    if (tooltip) return tooltip;
+    tooltip = document.createElement('div');
+    tooltip.id = 'chartTooltip';
+    tooltip.className = 'chart-tooltip';
+    document.body.appendChild(tooltip);
+    return tooltip;
   }
 
   window.PmsAllocation = {

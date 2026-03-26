@@ -13,12 +13,12 @@
       <ul class="nav-links">
         <li><a href="index.html">🏠 Dashboard</a></li>
         <li><a href="trades.html">📈 Trades</a></li>
-        <li><a href="longterm.html">💼 Long Term</a></li>
+        <li><a href="longterm.html">💼 Long-T</a></li>
         <li><a href="mf.html">💰 SIP</a></li>
-        <li><a class="active" href="pasttrades.html">🧾 Past Trades</a></li>
+        <li><a class="active" href="pasttrades.html">🧾 Past-T</a></li>
         <li><a href="journal.html">📚 Journal</a></li>
         <li><a href="share_calculator.html">🧮 Calculator</a></li>
-        <li><a href="cash_ledger.html">💵</a></li>
+        
       </ul>
     </nav>
   </header>
@@ -50,7 +50,12 @@
     </section>
 
     <section class="card section">
-      <div class="toolbar"><h3>Exited Trades</h3><label>Script Filter<input id="pastTradeFilter" type="text" placeholder="Filter by script" /></label></div>
+      <div class="toolbar"><h3>Allocation Breakdown</h3><label>Script Filter<input id="pastTradeFilter" type="text" placeholder="Filter by script" /></label></div>
+      <div id="pastTradesAllocation"></div>
+    </section>
+
+    <section class="card section">
+      <div class="toolbar"><h3>Exited Trades</h3></div>
       <div class="table-wrap">
         <table id="exitedTable">
           <thead>
@@ -59,11 +64,6 @@
           <tbody></tbody>
         </table>
       </div>
-    </section>
-
-    <section class="card section">
-      <h3>Allocation Breakdown</h3>
-      <div id="pastTradesAllocation"></div>
     </section>
   </main>
 
