@@ -308,7 +308,10 @@ tr:hover {
 .result-list li { display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--border); gap: 10px; }
 
 .journal-nav { display: flex; gap: 8px; margin-bottom: 12px; }
-.journal-textarea { width: 100%; min-height: 58vh; resize: vertical; line-height: 1.5; }
+.journal-prompts { display: grid; gap: 14px; }
+.journal-field { display: grid; gap: 8px; }
+.journal-field span { font-weight: 600; }
+.journal-textarea { width: 100%; min-height: 170px; resize: vertical; line-height: 1.5; }
 .sip-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
 .sip-tabs .active { border-color: var(--accent); color: var(--accent); }
 .section { animation: riseIn .32s ease-out; }
