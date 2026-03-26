@@ -15,28 +15,32 @@
     return Math.max(NEPSE_MIN_COMMISSION, amount * brokerRate(amount));
   }
 
-  function calculateTransaction(side, unitPrice, qty) {
+  function calculateTransaction(side, unitPrice, qty, options = {}) {
     const safeQty = Number(qty || 0);
     const safePrice = Number(unitPrice || 0);
     const totalAmount = safePrice * safeQty;
-    const commission = calculateCommission(totalAmount);
-    const sebonFee = totalAmount * SEBON_RATE;
+    const treatBuyAsWacc = side === 'buy' && Boolean(options.buyIsWacc);
+
+    const commission = treatBuyAsWacc ? 0 : calculateCommission(totalAmount);
+    const sebonFee = treatBuyAsWacc ? 0 : totalAmount * SEBON_RATE;
+    const dpCharge = treatBuyAsWacc ? 0 : DP_CHARGE;
+
     const totalPayable = side === 'sell'
-      ? totalAmount - commission - sebonFee - DP_CHARGE
-      : totalAmount + commission + sebonFee + DP_CHARGE;
+      ? totalAmount - commission - sebonFee - dpCharge
+      : totalAmount + commission + sebonFee + dpCharge;
 
     return {
       totalAmount,
       commission,
       sebonFee,
-      dpCharge: DP_CHARGE,
+      dpCharge,
       totalPayable,
       costPerShare: safeQty > 0 ? totalPayable / safeQty : 0,
     };
   }
 
-  function calculateRoundTrip({ buyPrice, soldPrice, qty }) {
-    const buy = calculateTransaction('buy', buyPrice, qty);
+  function calculateRoundTrip({ buyPrice, soldPrice, qty, buyIsWacc = true }) {
+    const buy = calculateTransaction('buy', buyPrice, qty, { buyIsWacc });
     const sell = calculateTransaction('sell', soldPrice, qty);
     const grossProfit = sell.totalPayable - buy.totalPayable;
     const capitalGainTax = grossProfit > 0 ? grossProfit * 0.05 : 0;

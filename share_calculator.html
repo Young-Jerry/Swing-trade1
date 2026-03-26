@@ -18,6 +18,7 @@
         <li><a href="pasttrades.html">🧾 Past Trades</a></li>
         <li><a href="journal.html">📚 Journal</a></li>
         <li><a class="active" href="share_calculator.html">🧮 Calculator</a></li>
+        <li><a href="cash_ledger.html">💵 Cash Ledger</a></li>
       </ul>
     </nav>
   </header>
@@ -42,9 +43,11 @@
           <label>Purchase Price (Rs)
             <input id="purchasePrice" type="number" min="0" step="0.01" required />
           </label>
+          <label class="checkbox-line"><input id="buyIsWacc" type="checkbox" /> Purchase price is already WACC (skip buying charges)</label>
           <label id="sellingWrap">Selling Price (Rs)
             <input id="sellingPrice" type="number" min="0" step="0.01" />
           </label>
+          <label class="checkbox-line" id="sellWaccWrap"><input id="sellUsesWaccBuy" type="checkbox" /> Use WACC purchase price for sell tax/profit basis</label>
         </form>
       </article>
 

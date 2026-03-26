@@ -10,10 +10,12 @@
     const shares = document.getElementById('shares');
     const sellingPrice = document.getElementById('sellingPrice');
     const sellingWrap = document.getElementById('sellingWrap');
+    const buyIsWacc = document.getElementById('buyIsWacc');
+    const sellUsesWaccBuy = document.getElementById('sellUsesWaccBuy');
     const capitalGainRow = document.getElementById('capitalGainRow');
     const receivableRow = document.getElementById('receivableRow');
 
-    [action, purchasePrice, shares, sellingPrice].forEach((el) => {
+    [action, purchasePrice, shares, sellingPrice, buyIsWacc, sellUsesWaccBuy].forEach((el) => {
       el.addEventListener('input', calculate);
       el.addEventListener('change', calculate);
     });
@@ -27,6 +29,7 @@
       const sell = num(sellingPrice.value);
 
       sellingWrap.style.display = side === 'sell' ? 'flex' : 'none';
+      document.getElementById('sellWaccWrap').style.display = side === 'sell' ? 'flex' : 'none';
       capitalGainRow.style.display = side === 'sell' ? 'flex' : 'none';
       receivableRow.style.display = side === 'sell' ? 'flex' : 'none';
 
@@ -36,8 +39,8 @@
       }
 
       const unitPrice = side === 'buy' ? buy : sell;
-      const tx = math().calculateTransaction(side, unitPrice, qty);
-      const buyTx = math().calculateTransaction('buy', buy, qty);
+      const tx = math().calculateTransaction(side, unitPrice, qty, { buyIsWacc: buyIsWacc.checked && side === 'buy' });
+      const buyTx = math().calculateTransaction('buy', buy, qty, { buyIsWacc: buyIsWacc.checked || sellUsesWaccBuy.checked });
       const grossProfit = side === 'sell' ? tx.totalPayable - buyTx.totalPayable : 0;
       const capitalGain = side === 'sell' && grossProfit > 0 ? grossProfit * 0.05 : 0;
       const totalReceivable = side === 'sell' ? tx.totalPayable - capitalGain : 0;

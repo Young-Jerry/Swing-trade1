@@ -18,6 +18,7 @@
         <li><a href="pasttrades.html">🧾 Past Trades</a></li>
         <li><a href="journal.html">📚 Journal</a></li>
         <li><a href="share_calculator.html">🧮 Calculator</a></li>
+        <li><a href="cash_ledger.html">💵 Cash Ledger</a></li>
       </ul>
     </nav>
   </header>
@@ -83,6 +84,11 @@
     </section>
 
     <section class="card section">
+      <h3>Allocation Breakdown</h3>
+      <div id="sipAllocationBreakdown"></div>
+    </section>
+
+    <section class="card section">
       <h3>Add Manual SIP</h3>
       <form id="manualSipForm" class="form-grid" autocomplete="off">
         <label>New SIP Name
@@ -98,6 +104,7 @@
   <script defer src="capital-manager.js"></script>
   <script type="module" src="firebase-sync.js"></script>
   <script defer src="data-recorder.js"></script>
+  <script defer src="allocation.js"></script>
   <script defer src="mf.js"></script>
 </body>
 </html>

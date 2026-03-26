@@ -136,6 +136,15 @@
 
       state.activeSip = activeSip;
       renderHistory();
+
+      if (window.PmsAllocation) {
+        window.PmsAllocation.renderAllocation('sipAllocationBreakdown', state.sips.map((sipName) => {
+          const rows = state.records[sipName] || [];
+          const units = rows.reduce((sum, row) => sum + Number(row.units || 0), 0);
+          const nav = Number(state.currentNav[sipName] || latestNav(sipName));
+          return { script: sipName, value: units * nav };
+        }));
+      }
     }
 
     function tabButton(value, label) {
