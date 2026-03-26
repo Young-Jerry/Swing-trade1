@@ -94,7 +94,7 @@
           const buyTx = fallbackCalculateTransaction('buy', buyPrice, qty);
           const sellTx = fallbackCalculateTransaction('sell', soldPrice, qty);
           const gross = sellTx.totalPayable - buyTx.totalPayable;
-          const taxRate = Number(holdingDays || 0) > 365 ? 0.075 : 0.05;
+          const taxRate = Number(holdingDays || 0) > 365 ? 0.05 : 0.075;
           const tax = gross > 0 ? gross * taxRate : 0;
           return { capitalGainTax: tax, netRealizedAmount: sellTx.totalPayable - tax, capitalGainTaxRate: taxRate };
         },
