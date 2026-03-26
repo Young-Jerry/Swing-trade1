@@ -1,78 +1,23 @@
 (() => {
-  const API_URL = 'https://bishaludash.com.np/NEPSE-Api/api/todayshare.json';
+  const API_URL = 'https://nepsetty.kokomo.workers.dev/api/stock';
   const TARGET_KEYS = ['trades', 'longterm'];
 
-  const SYMBOL_ALIAS_MAP = {
-    'EVEREST BANK LIMITED': 'EBL',
-  };
-
-  const stopWords = new Set([
-    'LIMITED', 'LTD', 'COMPANY', 'CO', 'BANK', 'DEBENTURE', 'DEVELOPMENT', 'FINANCE',
-    'MICROFINANCE', 'MICRO', 'INSURANCE', 'LIFE', 'NON', 'HYDROPOWER', 'HYDRO', 'POWER',
-    'MUTUAL', 'FUND', 'AND', '&', 'THE', 'PVT', 'PRABHU', 'PERCENT', 'BONUS', 'PROMOTER',
-  ]);
-
-  function normalizeText(value) {
+  function normalizeSymbol(value) {
     return String(value || '')
       .toUpperCase()
-      .replace(/[^A-Z0-9\s]/g, ' ')
-      .replace(/\s+/g, ' ')
       .trim();
   }
 
-  function buildInitialSymbol(companyName) {
-    const normalized = normalizeText(companyName);
-    if (!normalized) return '';
-    if (SYMBOL_ALIAS_MAP[normalized]) return SYMBOL_ALIAS_MAP[normalized];
-
-    const parts = normalized
-      .split(' ')
-      .filter((part) => part && !/^\d/.test(part) && !stopWords.has(part));
-
-    const initials = parts.map((part) => part[0]).join('');
-    if (initials.length >= 2 && initials.length <= 5) return initials;
-
-    return parts.join('').slice(0, 4);
-  }
-
-  function createSymbolTokens(companyName) {
-    const normalized = normalizeText(companyName);
-    const initials = buildInitialSymbol(companyName);
-    const compact = normalized.replace(/\s+/g, '');
-
-    return new Set([normalized, initials, compact].filter(Boolean));
-  }
-
-  function buildPriceLookup(apiRows) {
-    const bySymbol = new Map();
-
-    apiRows.forEach((entry) => {
-      const companyName = entry['Traded Companies'];
-      const close = Number(entry['Closing Price']);
-      if (!companyName || !Number.isFinite(close)) return;
-
-      const tokens = createSymbolTokens(companyName);
-      tokens.forEach((token) => bySymbol.set(token, close));
-    });
-
-    return bySymbol;
-  }
-
-  function matchPrice(script, lookup) {
-    const symbol = normalizeText(script);
-    if (!symbol) return null;
-
-    const compact = symbol.replace(/\s+/g, '');
-    if (lookup.has(symbol)) return lookup.get(symbol);
-    if (lookup.has(compact)) return lookup.get(compact);
-
-    for (const [token, price] of lookup.entries()) {
-      if (token.includes(symbol) || symbol.includes(token)) {
-        return price;
-      }
+  async function fetchLtpBySymbol(symbol) {
+    const url = `${API_URL}?symbol=${encodeURIComponent(symbol)}`;
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) {
+      throw new Error(`API request failed (${response.status}) for ${symbol}`);
     }
 
-    return null;
+    const payload = await response.json();
+    const ltp = Number(payload?.ltp);
+    return Number.isFinite(ltp) ? ltp : null;
   }
 
   function updateRowWithLtp(row, ltp) {
@@ -93,26 +38,33 @@
   }
 
   async function applyGlobalLtpUpdate() {
-    const response = await fetch(API_URL, { cache: 'no-store' });
-    if (!response.ok) {
-      throw new Error(`API request failed with status ${response.status}`);
-    }
-
-    const apiRows = await response.json();
-    if (!Array.isArray(apiRows)) {
-      throw new Error('Unexpected API response format.');
-    }
-
-    const lookup = buildPriceLookup(apiRows);
-
     let totalUpdated = 0;
-    TARGET_KEYS.forEach((key) => {
+
+    for (const key of TARGET_KEYS) {
       const parsed = JSON.parse(localStorage.getItem(key) || '[]');
-      if (!Array.isArray(parsed) || !parsed.length) return;
+      if (!Array.isArray(parsed) || !parsed.length) continue;
+
+      const symbolSet = new Set(
+        parsed
+          .map((row) => normalizeSymbol(row.script))
+          .filter(Boolean)
+      );
+
+      const symbolToLtp = new Map();
+
+      await Promise.all([...symbolSet].map(async (symbol) => {
+        try {
+          const ltp = await fetchLtpBySymbol(symbol);
+          if (Number.isFinite(ltp)) symbolToLtp.set(symbol, ltp);
+        } catch (error) {
+          console.warn(`Unable to fetch LTP for ${symbol}:`, error);
+        }
+      }));
 
       let changed = false;
       const nextRows = parsed.map((row) => {
-        const matchedLtp = matchPrice(row.script, lookup);
+        const symbol = normalizeSymbol(row.script);
+        const matchedLtp = symbolToLtp.get(symbol);
         if (!Number.isFinite(matchedLtp)) return row;
         changed = true;
         totalUpdated += 1;
@@ -122,7 +74,7 @@
       if (changed) {
         localStorage.setItem(key, JSON.stringify(nextRows));
       }
-    });
+    }
 
     window.dispatchEvent(new CustomEvent('pms-ltp-updated', { detail: { updated: totalUpdated } }));
     return totalUpdated;
@@ -143,7 +95,7 @@
       try {
         const updatedCount = await applyGlobalLtpUpdate();
         if (statusNode) {
-          statusNode.textContent = `Updated ${updatedCount} holding(s) from live closing prices.`;
+          statusNode.textContent = `Updated ${updatedCount} holding(s) from live API prices.`;
           statusNode.classList.remove('value-loss');
           statusNode.classList.add('value-profit');
         }
@@ -164,8 +116,7 @@
 
   window.PmsLtpUpdater = {
     applyGlobalLtpUpdate,
-    normalizeText,
-    buildInitialSymbol,
+    normalizeSymbol,
   };
 
   if (document.readyState === 'loading') {
