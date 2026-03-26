@@ -2,11 +2,7 @@
   const API_URL = 'https://nepsetty.kokomo.workers.dev/api/stock';
   const TARGET_KEYS = ['trades', 'longterm'];
 
-
   function normalizeSymbol(value) {
-    return String(value || '')
-      .toUpperCase()
-  function normalizeText(value) {
     return String(value || '')
       .toUpperCase()
       .replace(/[^A-Z0-9]/g, '')
@@ -44,31 +40,34 @@
 
   async function applyGlobalLtpUpdate() {
     let totalUpdated = 0;
+
     for (const key of TARGET_KEYS) {
       const parsed = JSON.parse(localStorage.getItem(key) || '[]');
       if (!Array.isArray(parsed) || !parsed.length) continue;
 
       const symbolSet = new Set(
         parsed
-          .map((row) => normalizeSymbol(row.script))
-          .map((row) => normalizeText(row.script))
+          .map((row) => normalizeSymbol(row.script || row.symbol || row.ticker))
           .filter(Boolean)
       );
 
       const symbolToLtp = new Map();
-      await Promise.all([...symbolSet].map(async (symbol) => {
-        try {
-          const ltp = await fetchLtpBySymbol(symbol);
-          if (Number.isFinite(ltp)) symbolToLtp.set(symbol, ltp);
-        } catch (error) {
-          console.warn(`Unable to fetch LTP for ${symbol}:`, error);
-        }
-      }));
+      await Promise.all(
+        [...symbolSet].map(async (symbol) => {
+          try {
+            const ltp = await fetchLtpBySymbol(symbol);
+            if (Number.isFinite(ltp)) {
+              symbolToLtp.set(symbol, ltp);
+            }
+          } catch (error) {
+            console.warn(`Unable to fetch LTP for ${symbol}:`, error);
+          }
+        })
+      );
 
       let changed = false;
       const nextRows = parsed.map((row) => {
-        const symbol = normalizeSymbol(row.script);
-        const symbol = normalizeText(row.script);
+        const symbol = normalizeSymbol(row.script || row.symbol || row.ticker);
         const matchedLtp = symbolToLtp.get(symbol);
         if (!Number.isFinite(matchedLtp)) return row;
         changed = true;
@@ -81,7 +80,10 @@
       }
     }
 
-    window.dispatchEvent(new CustomEvent('pms-ltp-updated', { detail: { updated: totalUpdated } }));
+    window.dispatchEvent(
+      new CustomEvent('pms-ltp-updated', { detail: { updated: totalUpdated } })
+    );
+
     return totalUpdated;
   }
 
@@ -100,7 +102,7 @@
       try {
         const updatedCount = await applyGlobalLtpUpdate();
         if (statusNode) {
-          statusNode.textContent = `Updated ${updatedCount} holding(s) from live API prices.`;
+          statusNode.textContent = `Updated ${updatedCount} holding(s) from ${API_URL}?symbol=SCRIPT_SYMBOL`;
           statusNode.classList.remove('value-loss');
           statusNode.classList.add('value-profit');
         }
@@ -121,8 +123,8 @@
 
   window.PmsLtpUpdater = {
     applyGlobalLtpUpdate,
+    fetchLtpBySymbol,
     normalizeSymbol,
-    normalizeText,
   };
 
   if (document.readyState === 'loading') {
