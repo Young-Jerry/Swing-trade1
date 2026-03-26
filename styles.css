@@ -328,6 +328,27 @@ tr:hover { background: #151d2b; }
   width: min(680px, 100%);
   padding: 16px;
 }
+.modal-fullscreen {
+  padding: 10px;
+}
+.modal-fullscreen .modal-card {
+  width: min(1240px, 100%);
+  height: calc(100vh - 20px);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  overflow: hidden;
+}
+.modal-body {
+  overflow: auto;
+  padding-right: 6px;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+.mass-edit-modal .table-wrap {
+  max-height: none;
+  height: 100%;
+}
 .file-btn {
   position: relative;
   overflow: hidden;
