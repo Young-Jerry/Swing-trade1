@@ -104,18 +104,11 @@
           <td>${normalized.type}</td>
           <td>${escapeHtml(normalized.name)}</td>
           <td>${currency(normalized.buyPrice)}</td>
-          <td>${currency(normalized.soldPrice || normalized.currentPrice || 0)}
-          </td><div class="subtitle">
-          Tax: ${currency(
-    (normalized.totalTax) ??
-    ((normalized.commission || 0) +
-     (normalized.sebonFee || 0) +
-     (normalized.dpCharge || 0) +
-     (normalized.capitalGainTax || 0))
-  )}
-</div>
+          <td>${currency(normalized.soldPrice || normalized.currentPrice || 0)}</td>
+          <td class="${profitClass(normalized.profit)}">${currency(normalized.profit)}</td>
+          <td>${currency(normalized.totalTaxPaid)}</td>
           <td class="${profitClass(normalized.moneyReceivable)}">${currency(normalized.moneyReceivable)}</td>
-          <td>${Math.floor(Number(normalized.holdingDays || 0))}</td>
+          <td>${normalized.holdingDays}</td>
           <td class="actions-cell">
             <button class="btn-secondary" data-action="edit" data-id="${normalized.id}">✏️</button>
             <button class="btn-danger" data-action="delete" data-id="${normalized.id}">🗑️</button>
@@ -141,7 +134,7 @@
 
       if (!filtered.length) {
         const tr = document.createElement('tr');
-        tr.innerHTML = '<td colspan="8">No exited trades yet.</td>';
+        tr.innerHTML = '<td colspan="9">No exited trades yet.</td>';
         exitedBody.appendChild(tr);
       }
     }
@@ -244,7 +237,6 @@
 
     }
 
-
     function tradeMath() {
       return window.PmsTradeMath || {
         calculateRoundTrip: ({ buyPrice, soldPrice, qty }) => ({
@@ -265,10 +257,22 @@
       const profit = Number(calc.netProfit || calc.profit || row.profit || 0);
       const capitalGainTax = Number(calc.capitalGainTax || row.capitalGainTax || 0);
       const holdingDays = Math.floor(Number(row.holdingDays || 0));
+      const buy = calc.buy || {};
+      const sell = calc.sell || {};
+      const totalTaxPaid =
+        capitalGainTax +
+        Number(buy.commission || 0) +
+        Number(sell.commission || 0) +
+        Number(buy.sebonFee || 0) +
+        Number(sell.sebonFee || 0) +
+        Number(buy.dpCharge || 0) +
+        Number(sell.dpCharge || 0);
+
       return {
         ...row,
         capitalGainTax,
         profit,
+        totalTaxPaid,
         buyTotal: Number(calc.invested || row.buyTotal || 0),
         netSoldTotal: Number(calc.netRealizedAmount || row.netSoldTotal || row.soldTotal || 0),
         perDayProfit: holdingDays > 0 ? profit / holdingDays : profit,
