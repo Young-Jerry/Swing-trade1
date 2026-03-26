@@ -40,14 +40,6 @@
     renderPie(totals, combined);
     renderProfitPanel();
 
-    if (window.PmsAllocation) {
-      const byScript = [
-        ...rowsFromKey('trades'),
-        ...rowsFromKey('longterm'),
-        ...rowsFromSip(),
-      ];
-      window.PmsAllocation.renderAllocation('dashboardScriptAllocation', byScript);
-    }
 
     if (window.PmsCapital && typeof window.PmsCapital.updateWidgets === 'function') {
       window.PmsCapital.updateWidgets();
