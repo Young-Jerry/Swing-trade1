@@ -6,6 +6,7 @@
     booted = true;
     const TRADES_KEY = 'trades';
     const LONGTERM_KEY = 'longterm';
+    const SIP_STATE_KEY = 'sipStateV4';
     const EXITED_KEY = 'exitedTradesV2';
 
     const exitForm = document.getElementById('exitForm');
@@ -59,6 +60,7 @@
           qty: record.qty,
           buyPrice: record.buyPrice,
           soldPrice,
+          total: Number(soldPrice || 0) * Number(record.qty || 0),
           buyTotal: roundTrip.invested,
           soldTotal: roundTrip.realizedAmount,
           netSoldTotal: Number(roundTrip.netRealizedAmount || roundTrip.realizedAmount || 0),
@@ -106,10 +108,12 @@
         tr.innerHTML = `
           <td>${normalized.type}</td>
           <td>${escapeHtml(normalized.name)}</td>
-          <td title="Buy Price × Quantity">${currency(normalized.buyTotal)}</td>
-          <td title="Sold Price × Quantity">${currency(soldTotal)}</td>
-          <td class="${profitClass(normalized.profit)}">${currency(normalized.profit)}</td>
+          <td title="Buy Price">${currency(normalized.buyPrice)}</td>
+          <td title="Sell Price">${currency(normalized.soldPrice)}</td>
+          <td title="Sell Quantity × Sell Price">${currency(normalized.total)}</td>
           <td class="value-loss">${currency(normalized.totalTaxPaid)}</td>
+          <td class="${profitClass(normalized.profit)}">${currency(normalized.profit)}</td>
+          <td title="WACC × Quantity">${currency(normalized.buyTotal)}</td>
           <td class="${profitClass(normalized.moneyReceivable)}">${currency(normalized.moneyReceivable)}</td>
           <td>${normalized.holdingDays}</td>
           <td class="actions-cell">
@@ -137,7 +141,7 @@
 
       if (!filtered.length) {
         const tr = document.createElement('tr');
-        tr.innerHTML = '<td colspan="9">No exited trades yet.</td>';
+        tr.innerHTML = '<td colspan="11">No exited trades yet.</td>';
         exitedBody.appendChild(tr);
       }
     }
@@ -246,6 +250,25 @@
           currentPrice: Number(row.ltp || 0),
           ref: 'longterm',
         })),
+        sip: () => {
+          const sipState = readSipState();
+          return sipState.sips.map((sipName) => {
+            const rows = Array.isArray(sipState.records[sipName]) ? sipState.records[sipName] : [];
+            const qty = rows.reduce((sum, row) => sum + Number(row.units || 0), 0);
+            const amount = rows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
+            const wacc = qty > 0 ? amount / qty : 0;
+            return {
+              id: `s-${sipName}`,
+              rawId: sipName,
+              source: 'SIP',
+              name: sipName,
+              qty,
+              buyPrice: wacc,
+              currentPrice: Number(sipState.currentNav[sipName] || 0),
+              ref: 'sip',
+            };
+          }).filter((row) => Number(row.qty || 0) > 0);
+        },
       };
 
       return (builders[type] || (() => []))();
@@ -257,6 +280,12 @@
         const rows = readJson(storageKey).filter((r) => r.id !== record.rawId);
         localStorage.setItem(storageKey, JSON.stringify(rows));
         return;
+      }
+      if (record.ref === 'sip') {
+        const state = readSipState();
+        state.records[record.rawId] = [];
+        state.currentNav[record.rawId] = 0;
+        localStorage.setItem(SIP_STATE_KEY, JSON.stringify(state));
       }
 
     }
@@ -297,6 +326,7 @@
         capitalGainTax,
         profit,
         soldTotal: Number(calc.realizedAmount || row.soldTotal || 0),
+        total: Number(row.total || (Number(row.soldPrice || 0) * Number(row.qty || 0))),
         totalTaxPaid,
         buyTotal: Number(calc.invested || row.buyTotal || 0),
         netSoldTotal: Number(calc.netRealizedAmount || row.netSoldTotal || row.soldTotal || 0),
@@ -304,6 +334,21 @@
         moneyReceivable: Number(calc.invested || row.buyTotal || 0) + profit,
         holdingDays,
       };
+    }
+
+    function readSipState() {
+      const fallback = { sips: [], records: {}, currentNav: {} };
+      try {
+        const state = JSON.parse(localStorage.getItem(SIP_STATE_KEY) || 'null');
+        if (!state || !Array.isArray(state.sips)) return fallback;
+        return {
+          sips: state.sips,
+          records: state.records || {},
+          currentNav: state.currentNav || {},
+        };
+      } catch {
+        return fallback;
+      }
     }
 
     function buildModal({ title, subtitle, body, actions }) {
