@@ -2,9 +2,14 @@
   const API_URL = 'https://nepsetty.kokomo.workers.dev/api/stock';
   const TARGET_KEYS = ['trades', 'longterm'];
 
+
   function normalizeSymbol(value) {
     return String(value || '')
       .toUpperCase()
+  function normalizeText(value) {
+    return String(value || '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '')
       .trim();
   }
 
@@ -39,7 +44,6 @@
 
   async function applyGlobalLtpUpdate() {
     let totalUpdated = 0;
-
     for (const key of TARGET_KEYS) {
       const parsed = JSON.parse(localStorage.getItem(key) || '[]');
       if (!Array.isArray(parsed) || !parsed.length) continue;
@@ -47,11 +51,11 @@
       const symbolSet = new Set(
         parsed
           .map((row) => normalizeSymbol(row.script))
+          .map((row) => normalizeText(row.script))
           .filter(Boolean)
       );
 
       const symbolToLtp = new Map();
-
       await Promise.all([...symbolSet].map(async (symbol) => {
         try {
           const ltp = await fetchLtpBySymbol(symbol);
@@ -64,6 +68,7 @@
       let changed = false;
       const nextRows = parsed.map((row) => {
         const symbol = normalizeSymbol(row.script);
+        const symbol = normalizeText(row.script);
         const matchedLtp = symbolToLtp.get(symbol);
         if (!Number.isFinite(matchedLtp)) return row;
         changed = true;
@@ -117,6 +122,7 @@
   window.PmsLtpUpdater = {
     applyGlobalLtpUpdate,
     normalizeSymbol,
+    normalizeText,
   };
 
   if (document.readyState === 'loading') {
