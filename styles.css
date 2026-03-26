@@ -96,6 +96,11 @@ h1, h2, h3 { margin-top: 0; }
   transform: translateY(-4px) scale(1.02);
   box-shadow: 0 12px 26px rgba(0, 0, 0, .35);
 }
+.stat-card.linked-hover {
+  transform: translateY(-4px) scale(1.02);
+  border-color: var(--accent);
+  box-shadow: 0 14px 30px rgba(78, 137, 255, .35);
+}
 .stat-label { color: var(--muted); font-size: .92rem; }
 .stat-value { font-size: 1.35rem; margin-top: 8px; font-weight: 700; }
 
@@ -136,6 +141,16 @@ h1, h2, h3 { margin-top: 0; }
   border: 1px solid var(--border);
   border-radius: 12px;
   background: #0f1828;
+}
+.btn-cash {
+  border-color: #f4b942;
+  background: linear-gradient(180deg, #ffd76f, #f4b942);
+  color: #2f2204;
+  box-shadow: 0 8px 18px rgba(244, 185, 66, .35), inset 0 1px 0 rgba(255, 255, 255, .35);
+}
+.btn-cash:hover {
+  filter: brightness(1.04);
+  transform: translateY(-2px) scale(1.03);
 }
 .cash-widget-value {
   display: flex;
