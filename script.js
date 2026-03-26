@@ -40,6 +40,15 @@
     renderPie(totals, combined);
     renderProfitPanel();
 
+    if (window.PmsAllocation) {
+      const byScript = [
+        ...rowsFromKey('trades'),
+        ...rowsFromKey('longterm'),
+        ...rowsFromSip(),
+      ];
+      window.PmsAllocation.renderAllocation('dashboardScriptAllocation', byScript);
+    }
+
     if (window.PmsCapital && typeof window.PmsCapital.updateWidgets === 'function') {
       window.PmsCapital.updateWidgets();
     }
@@ -144,6 +153,22 @@
       if (nav > 0 && units > 0) return sum + units * nav;
       return sum + rows.reduce((s, row) => s + Number(row.amount || (Number(row.units || 0) * Number(row.nav || 0))), 0);
     }, 0);
+  }
+
+
+  function rowsFromKey(key) {
+    const rows = safeJson(localStorage.getItem(key), []);
+    return rows.map((row) => ({ script: row.script, value: Number(row.ltp || 0) * Number(row.qty || 0) }));
+  }
+
+  function rowsFromSip() {
+    const state = safeJson(localStorage.getItem('sipStateV4') || '{}', {});
+    return Object.entries(state.records || {}).map(([sipName, list]) => {
+      const rows = Array.isArray(list) ? list : [];
+      const units = rows.reduce((sum, row) => sum + Number(row.units || 0), 0);
+      const nav = Number((state.currentNav || {})[sipName] || rows[rows.length - 1]?.nav || 0);
+      return { script: sipName, value: units * nav };
+    });
   }
 
   function renderProfitPanel() {

@@ -12,6 +12,7 @@
     const tableBody = document.querySelector('#portfolioTable tbody');
     const form = document.getElementById('addForm');
     const indicator = document.getElementById('saveIndicator');
+    const scriptFilter = document.getElementById('scriptFilter');
 
     let sortKey = 'script';
     let sortDir = 1;
@@ -38,6 +39,7 @@
       });
       const massBtn = document.getElementById('massEditBtn');
       if (massBtn) massBtn.addEventListener('click', openMassEdit);
+      if (scriptFilter) scriptFilter.addEventListener('input', render);
       window.addEventListener('pms-ltp-updated', () => {
         rows = readRows();
         render();
@@ -115,7 +117,10 @@
     }
 
     function render() {
-      const list = [...rows].sort(sorter);
+      const keyword = clean(scriptFilter ? scriptFilter.value : '').toLowerCase();
+      const list = [...rows]
+        .filter((row) => !keyword || row.script.toLowerCase().includes(keyword))
+        .sort(sorter);
       tableBody.innerHTML = '';
 
       list.forEach((row) => {
@@ -135,7 +140,7 @@
         tableBody.appendChild(tr);
       });
 
-      updateSummary();
+      updateSummary(list);
     }
 
     function editableCell(row, key, value, type, opts = {}) {
@@ -443,16 +448,23 @@
       return backdrop;
     }
 
-    function updateSummary() {
-      const invested = rows.reduce((s, r) => s + r.wacc * r.qty, 0);
-      const current = rows.reduce((s, r) => s + r.ltp * r.qty, 0);
-      const pl = rows.reduce((s, r) => s + (r.ltp - r.wacc) * r.qty, 0);
+    function updateSummary(viewRows = rows) {
+      const invested = viewRows.reduce((s, r) => s + r.wacc * r.qty, 0);
+      const current = viewRows.reduce((s, r) => s + r.ltp * r.qty, 0);
+      const pl = viewRows.reduce((s, r) => s + (r.ltp - r.wacc) * r.qty, 0);
 
       document.getElementById('totalInvested').textContent = currency(invested);
       document.getElementById('totalCurrent').textContent = currency(current);
       const plNode = document.getElementById('totalPL');
       plNode.textContent = currency(pl);
       plNode.className = plClass(pl);
+
+      if (window.PmsAllocation) {
+        window.PmsAllocation.renderAllocation('pageAllocationBreakdown', viewRows.map((row) => ({
+          script: row.script,
+          value: Number(row.ltp || 0) * Number(row.qty || 0),
+        })));
+      }
     }
 
     function sorter(a, b) {
@@ -505,10 +517,6 @@
     }
 
     function investedCost(price, qty) {
-      const calc = window.PmsTradeMath
-        ? window.PmsTradeMath.calculateTransaction('buy', Number(price || 0), Number(qty || 0))
-        : null;
-      if (calc && Number.isFinite(calc.totalPayable)) return calc.totalPayable;
       return Number(price || 0) * Number(qty || 0);
     }
 

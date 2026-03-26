@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cash Ledger | Portfolio Management System</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="header">
+    <nav class="nav">
+      <div class="logo">Portfolio Management System</div>
+      <ul class="nav-links">
+        <li><a href="index.html">🏠 Dashboard</a></li>
+        <li><a href="trades.html">📈 Trades</a></li>
+        <li><a href="longterm.html">💼 Long Term</a></li>
+        <li><a href="mf.html">💰 SIP</a></li>
+        <li><a href="pasttrades.html">🧾 Past Trades</a></li>
+        <li><a href="journal.html">📚 Journal</a></li>
+        <li><a href="share_calculator.html">🧮 Calculator</a></li>
+        <li><a class="active" href="cash_ledger.html">💵 Cash Ledger</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="page-heading">
+      <div>
+        <h1>Cash Ledger</h1>
+        <p class="subtitle">Track every cash in/out with source and corrections.</p>
+      </div>
+      <div class="summary-item">Current Cash: <strong id="ledgerCashBalance">Rs 0</strong></div>
+    </section>
+
+    <section class="card section">
+      <h3>Add Ledger Entry</h3>
+      <form id="ledgerForm" class="form-grid" autocomplete="off">
+        <label>Type
+          <select name="type" required>
+            <option value="credit">Cash In</option>
+            <option value="debit">Cash Out</option>
+          </select>
+        </label>
+        <label>Amount
+          <input name="amount" type="number" min="0.01" step="0.01" required />
+        </label>
+        <label>Source
+          <input name="source" type="text" placeholder="Bank transfer / Salary / Correction" required />
+        </label>
+        <label>Note
+          <input name="note" type="text" placeholder="Optional details" />
+        </label>
+        <button class="btn-primary" type="submit">Add Entry</button>
+      </form>
+    </section>
+
+    <section class="card section">
+      <h3>Ledger History</h3>
+      <div class="table-wrap">
+        <table id="ledgerTable">
+          <thead><tr><th>Date</th><th>Type</th><th>Source</th><th>Note</th><th>Amount</th><th>Actions</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script defer src="capital-manager.js"></script>
+  <script defer src="cash_ledger.js"></script>
+</body>
+</html>

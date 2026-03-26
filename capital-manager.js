@@ -1,9 +1,23 @@
 (() => {
   const CASH_KEY = 'cashBalanceV1';
+  const LEDGER_KEY = 'cashLedgerV1';
 
   function readCash() {
     const value = Number(localStorage.getItem(CASH_KEY) || 0);
     return Number.isFinite(value) ? value : 0;
+  }
+
+  function readLedger() {
+    try {
+      const rows = JSON.parse(localStorage.getItem(LEDGER_KEY) || '[]');
+      return Array.isArray(rows) ? rows : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveLedger(rows) {
+    localStorage.setItem(LEDGER_KEY, JSON.stringify(rows));
   }
 
   function setCash(value) {
@@ -13,12 +27,45 @@
     window.dispatchEvent(new CustomEvent('pms-cash-updated', { detail: { cash: readCash() } }));
   }
 
-  function adjustCash(delta) {
+  function adjustCash(delta, meta = {}) {
     const change = Number(delta || 0);
-    if (!Number.isFinite(change)) return readCash();
+    if (!Number.isFinite(change) || change === 0) return readCash();
+
     const next = readCash() + change;
     setCash(next);
+
+    const ledger = readLedger();
+    ledger.push({
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+      delta: change,
+      source: String(meta.source || 'System Auto Entry'),
+      note: String(meta.note || ''),
+      type: String(meta.type || (change >= 0 ? 'credit' : 'debit')),
+      kind: String(meta.kind || 'system'),
+      editable: Boolean(meta.editable),
+    });
+    saveLedger(ledger);
     return next;
+  }
+
+  function updateLedgerEntry(id, patch = {}) {
+    const ledger = readLedger();
+    const index = ledger.findIndex((row) => row.id === id);
+    if (index < 0) return;
+    const current = ledger[index];
+    const oldDelta = Number(current.delta || 0);
+    const nextDelta = Number(patch.delta);
+    const safeNextDelta = Number.isFinite(nextDelta) ? nextDelta : oldDelta;
+
+    ledger[index] = {
+      ...current,
+      ...patch,
+      delta: safeNextDelta,
+      updatedAt: new Date().toISOString(),
+    };
+    saveLedger(ledger);
+    setCash(readCash() - oldDelta + safeNextDelta);
   }
 
   function investedCapital() {
@@ -37,7 +84,6 @@
   function renderTopWidget() {
     const nav = document.querySelector('.nav');
     if (!nav || nav.querySelector('.cash-widget')) return;
-    const page = location.pathname.split('/').pop() || 'index.html';
 
     const wrap = document.createElement('div');
     wrap.className = 'cash-widget';
@@ -46,18 +92,9 @@
         <span class="cash-widget-label">Cash Balance</span>
         <strong id="topCashBalance">Rs 0</strong>
       </div>
-      <button type="button" id="topCashEditBtn" class="btn-icon" title="Edit cash" aria-label="Edit cash balance">✏️</button>
+      <a id="topCashLedgerBtn" class="btn-secondary btn-link" href="cash_ledger.html" title="Open cash ledger" aria-label="Open cash ledger">Open Ledger</a>
     `;
     nav.appendChild(wrap);
-
-    const btn = wrap.querySelector('#topCashEditBtn');
-    btn.addEventListener('click', () => {
-      const entered = prompt('Enter cash balance amount (NPR):', String(Math.round(readCash())));
-      if (entered === null) return;
-      const parsed = Number.parseFloat(entered);
-      if (!Number.isFinite(parsed)) return;
-      setCash(parsed);
-    });
   }
 
   function updateWidgets() {
@@ -66,18 +103,6 @@
 
     const dashboardCash = document.getElementById('dashboardCashBalance');
     if (dashboardCash) dashboardCash.textContent = money(readCash());
-
-    const dashboardEditBtn = document.getElementById('dashboardCashEditBtn');
-    if (dashboardEditBtn && !dashboardEditBtn.dataset.bound) {
-      dashboardEditBtn.dataset.bound = 'true';
-      dashboardEditBtn.addEventListener('click', () => {
-        const entered = prompt('Enter cash balance amount (NPR):', String(Math.round(readCash())));
-        if (entered === null) return;
-        const parsed = Number.parseFloat(entered);
-        if (!Number.isFinite(parsed)) return;
-        setCash(parsed);
-      });
-    }
 
     const investedNode = document.getElementById('openInvestedCapital');
     if (investedNode) investedNode.textContent = money(investedCapital());
@@ -93,15 +118,18 @@
   }
 
   function money(value) {
-    const rounded = Math.round(Number(value || 0));
-    return `Rs ${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(rounded)}`;
+    const rounded = Number(value || 0);
+    return `Rs ${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(rounded)}`;
   }
 
   window.PmsCapital = {
     CASH_KEY,
+    LEDGER_KEY,
     readCash,
     setCash,
     adjustCash,
+    readLedger,
+    updateLedgerEntry,
     investedCapital,
     updateWidgets,
   };
@@ -110,7 +138,7 @@
     renderTopWidget();
     updateWidgets();
     window.addEventListener('storage', (event) => {
-      if (event.key === CASH_KEY) updateWidgets();
+      if (event.key === CASH_KEY || event.key === LEDGER_KEY) updateWidgets();
     });
   };
 

@@ -14,6 +14,7 @@
     const soldPriceInput = document.getElementById('soldPrice');
     const holdingDaysInput = document.getElementById('holdingDays');
     const exitedBody = document.querySelector('#exitedTable tbody');
+    const pastTradeFilter = document.getElementById('pastTradeFilter');
 
     if (!exitForm || !exitType || !exitRecord || !soldPriceInput || !exitedBody) return;
 
@@ -23,6 +24,7 @@
 
     function bindEvents() {
       exitType.addEventListener('change', renderRecordOptions);
+      if (pastTradeFilter) pastTradeFilter.addEventListener('input', renderExited);
 
       exitForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -91,7 +93,10 @@
       const exited = readJson(EXITED_KEY);
       exitedBody.innerHTML = '';
 
-      exited.forEach((row) => {
+      const keyword = String(pastTradeFilter ? pastTradeFilter.value : '').trim().toLowerCase();
+      exited
+        .filter((row) => !keyword || String(row.name || '').toLowerCase().includes(keyword))
+        .forEach((row) => {
         const normalized = normalizeExited(row);
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -117,6 +122,13 @@
       exitedBody.querySelectorAll('button[data-action="delete"]').forEach((btn) => {
         btn.addEventListener('click', () => deleteExited(btn.dataset.id));
       });
+
+      if (window.PmsAllocation) {
+        window.PmsAllocation.renderAllocation('pastTradesAllocation', exited.map((row) => ({
+          script: row.name,
+          value: Number(row.netSoldTotal || row.soldTotal || 0),
+        })));
+      }
 
       if (!exited.length) {
         const tr = document.createElement('tr');

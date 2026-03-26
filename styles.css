@@ -394,3 +394,27 @@ tr:hover { background: #151d2b; }
 .mass-edit-modal tr:hover { background: #172743; }
 
 .cash-balance-row { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+
+.checkbox-line {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+.checkbox-line input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+}
+.btn-link {
+  text-decoration: none;
+}
+.allocation-table-wrap {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: auto;
+}
+.allocation-table th,
+.allocation-table td {
+  padding: 10px 12px;
+}
