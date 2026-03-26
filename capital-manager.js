@@ -2,9 +2,15 @@
   const CASH_KEY = 'cashBalanceV1';
   const LEDGER_KEY = 'cashLedgerV1';
 
+  function normalizeMoney(value) {
+    const n = Number(value || 0);
+    if (!Number.isFinite(n)) return 0;
+    return Math.abs(n) < 1e-9 ? 0 : n;
+  }
+
   function readCash() {
     const value = Number(localStorage.getItem(CASH_KEY) || 0);
-    return Number.isFinite(value) ? value : 0;
+    return normalizeMoney(value);
   }
 
   function readLedger() {
@@ -21,8 +27,8 @@
   }
 
   function setCash(value) {
-    const safe = Number(value || 0);
-    localStorage.setItem(CASH_KEY, String(Number.isFinite(safe) ? safe : 0));
+    const safe = normalizeMoney(value);
+    localStorage.setItem(CASH_KEY, String(safe));
     updateWidgets();
     window.dispatchEvent(new CustomEvent('pms-cash-updated', { detail: { cash: readCash() } }));
   }
@@ -66,6 +72,15 @@
     };
     saveLedger(ledger);
     setCash(readCash() - oldDelta + safeNextDelta);
+  }
+
+  function deleteLedgerEntry(id) {
+    const ledger = readLedger();
+    const index = ledger.findIndex((row) => row.id === id);
+    if (index < 0) return;
+    const [removed] = ledger.splice(index, 1);
+    saveLedger(ledger);
+    setCash(readCash() - Number(removed.delta || 0));
   }
 
   function investedCapital() {
@@ -130,6 +145,7 @@
     adjustCash,
     readLedger,
     updateLedgerEntry,
+    deleteLedgerEntry,
     investedCapital,
     updateWidgets,
   };

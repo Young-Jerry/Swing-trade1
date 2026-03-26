@@ -1,5 +1,5 @@
 (() => {
-  const COLORS = ['#4e89ff', '#2ac07e', '#f4b942', '#ff6b6b', '#c084fc', '#22d3ee', '#f97316', '#14b8a6', '#e879f9', '#84cc16'];
+  const COLORS = ['#2563eb', '#16a34a', '#f59e0b', '#ef4444', '#9333ea', '#06b6d4', '#ea580c', '#0f766e', '#db2777', '#65a30d'];
 
   function currency(value) {
     return `Rs ${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(Number(value || 0))}`;
@@ -54,9 +54,9 @@
         </div>
         <ul class="legend allocation-legend">
           ${segments.map((segment) => `
-            <li>
+            <li data-idx="${segment.idx}">
               <span><span class="dot" style="background:${segment.color}"></span>${segment.script}</span>
-              <strong>${segment.percent.toFixed(2)}%</strong>
+              <strong>${segment.percent.toFixed(2)}% · ${currency(segment.value)}</strong>
             </li>
           `).join('')}
         </ul>

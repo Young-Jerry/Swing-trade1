@@ -43,11 +43,13 @@
           <label>Purchase Price (Rs)
             <input id="purchasePrice" type="number" min="0" step="0.01" required />
           </label>
-          <label class="checkbox-line"><input id="buyIsWacc" type="checkbox" /> Purchase price is already WACC (skip buying charges)</label>
+          <label class="checkbox-line"><input id="buyIsWacc" type="checkbox" /> WACC Rate?</label>
           <label id="sellingWrap">Selling Price (Rs)
             <input id="sellingPrice" type="number" min="0" step="0.01" />
           </label>
-          <label class="checkbox-line" id="sellWaccWrap"><input id="sellUsesWaccBuy" type="checkbox" /> Use WACC purchase price for sell tax/profit basis</label>
+          <label id="holdingDaysWrap">Holding Days
+            <input id="holdingDays" type="number" min="0" step="1" value="0" />
+          </label>
         </form>
       </article>
 
@@ -58,10 +60,10 @@
           <li><span>* Commission</span><strong id="commission">Rs 0</strong></li>
           <li><span>SEBON Fee</span><strong id="sebonFee">Rs 0</strong></li>
           <li><span>DP Charge</span><strong id="dpCharge">Rs 25.00</strong></li>
-          <li><span>Total Amount (Before Capital Gain)</span><strong id="totalPayable">Rs 0</strong></li>
-          <li id="capitalGainRow"><span>Capital Gain Tax (5% of profit)</span><strong id="capitalGain">Rs 0</strong></li>
-          <li id="receivableRow"><span>Net Amount Receivable</span><strong id="totalReceivable">Rs 0</strong></li>
-          <li><span>Cost/Net Per Share</span><strong id="costPerShare">Rs 0</strong></li>
+          <li><span>Total Amount</span><strong id="totalPayable">Rs 0.00</strong></li>
+          <li id="capitalGainRow"><span>Capital Gain Tax</span><strong id="capitalGain">Rs 0.00</strong></li>
+          <li id="receivableRow"><span>Net Amount Receivable</span><strong id="totalReceivable">Rs 0.00</strong></li>
+          <li><span>Cost Per Share</span><strong id="costPerShare">Rs 0.00</strong></li>
         </ul>
         <p class="subtitle" id="commissionNote">* Commission includes NEPSE Commission and SEBON Regulatory Fee.</p>
       </article>

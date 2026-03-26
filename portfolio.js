@@ -388,6 +388,7 @@
         buyPrice: row.wacc,
         soldPrice,
         qty: row.qty,
+        holdingDays,
       });
       const exited = readJson('exitedTradesV2');
       exited.push({

@@ -1,11 +1,11 @@
 :root {
   --bg: #0b0f17;
-  --surface: #131a26;
-  --surface-2: #1b2332;
+  --surface: #111b2d;
+  --surface-2: #18263d;
   --border: #2a3448;
   --text: #e8edf7;
   --muted: #9ba7bf;
-  --accent: #7aa2ff;
+  --accent: #4f8cff;
   --accent-soft: rgba(122, 162, 255, 0.2);
   --profit: #2ac07e;
   --loss: #ea5a5a;
@@ -84,7 +84,7 @@ body {
   box-shadow: var(--shadow);
 }
 
-h1, h2, h3 { margin-top: 0; }
+h1, h2, h3 { margin-top: 0; letter-spacing: .2px; color: #f4f8ff; }
 .subtitle { color: var(--muted); margin-top: 4px; }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
@@ -234,13 +234,13 @@ button:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,.
 
 .table-wrap { overflow: auto; max-height: 62vh; border: 1px solid var(--border); border-radius: 10px; }
 table { width: 100%; border-collapse: collapse; table-layout: auto; }
-th, td { padding: 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th, td { padding: 10px; border-bottom: 1px solid var(--border); white-space: nowrap; vertical-align: middle; }
 th { position: sticky; top: 0; background: #111827; z-index: 2; text-align: left; cursor: pointer; }
 tr:hover { background: #151d2b; }
 .inline-edit { width: 100%; }
 .value-profit { color: var(--profit); }
 .value-loss { color: var(--loss); }
-.actions-cell { display: flex; gap: 6px; flex-wrap: wrap; }
+.actions-cell { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; justify-content: flex-start; }
 .actions-cell .btn-secondary,
 .actions-cell .btn-danger {
   min-width: 40px;
@@ -280,7 +280,7 @@ tr:hover { background: #151d2b; }
   .nav-links { width: 100%; justify-content: flex-start; }
 }
 
-#allocationPie, .allocation-pie { transition: transform .2s ease, box-shadow .2s ease; }
+#allocationPie, .allocation-pie { width: 260px; height: 260px; transition: transform .2s ease, box-shadow .2s ease; }
 #allocationPie:hover, .allocation-pie:hover { transform: perspective(700px) rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg)) scale(1.07); box-shadow: inset 0 0 0 1px rgba(255,255,255,.15), 0 0 30px color-mix(in srgb, var(--pie-glow, #7aa2ff) 55%, transparent), 0 18px 32px rgba(78,137,255,.35); filter: saturate(1.12); }
 
 .stat-card:hover .stat-value { transform: translateY(-2px); }

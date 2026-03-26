@@ -42,6 +42,7 @@
           buyPrice: record.buyPrice,
           soldPrice,
           qty: record.qty,
+          holdingDays,
         });
         const grossProfit = Number(roundTrip.grossProfit || roundTrip.profit || 0);
         const capitalGainTax = Number(roundTrip.capitalGainTax || 0);
@@ -144,8 +145,11 @@
       const normalized = normalizeExited(row);
       const backdrop = buildModal({
         title: `Edit ${normalized.name}`,
-        subtitle: 'Update holding days.',
+        subtitle: 'Update sold price and holding days.',
         body: `
+          <label>Sold Price
+            <input type="number" min="0.01" step="0.01" data-field="soldPrice" value="${normalized.soldPrice}" />
+          </label>
           <label>Holding Days
             <input type="number" min="0" step="1" data-field="holdingDays" value="${normalized.holdingDays}" />
           </label>
@@ -154,13 +158,23 @@
       });
       const card = backdrop.querySelector('.modal-card');
       card.querySelector('[data-confirm="true"]').addEventListener('click', () => {
+        const soldPrice = Number(card.querySelector('[data-field="soldPrice"]').value);
         const parsed = Math.floor(Number(card.querySelector('[data-field="holdingDays"]').value));
-        if (!Number.isFinite(parsed) || parsed < 0) return;
+        if (!Number.isFinite(parsed) || parsed < 0 || !Number.isFinite(soldPrice) || soldPrice <= 0) return;
+        const recalc = tradeMath().calculateRoundTrip({
+          buyPrice: Number(row.buyPrice || 0),
+          soldPrice,
+          qty: Number(row.qty || 0),
+          holdingDays: parsed,
+        });
+        const previousNet = Number(row.netSoldTotal || row.soldTotal || 0);
+        row.soldPrice = soldPrice;
         row.holdingDays = parsed;
-        row.profit = normalized.profit;
-        row.capitalGainTax = normalized.capitalGainTax;
-        row.perDayProfit = parsed > 0 ? normalized.profit / parsed : normalized.profit;
-        row.netSoldTotal = normalized.netSoldTotal;
+        row.profit = Number(recalc.netProfit || recalc.profit || 0);
+        row.capitalGainTax = Number(recalc.capitalGainTax || 0);
+        row.perDayProfit = parsed > 0 ? row.profit / parsed : row.profit;
+        row.netSoldTotal = Number(recalc.netRealizedAmount || recalc.realizedAmount || 0);
+        if (window.PmsCapital) window.PmsCapital.adjustCash(row.netSoldTotal - previousNet);
         localStorage.setItem(EXITED_KEY, JSON.stringify(exited));
         renderExited();
         backdrop.remove();
@@ -238,6 +252,7 @@
         buyPrice: row.buyPrice,
         soldPrice: row.soldPrice || row.currentPrice || 0,
         qty: row.qty,
+        holdingDays: row.holdingDays,
       });
       const profit = Number(calc.netProfit || calc.profit || row.profit || 0);
       const capitalGainTax = Number(calc.capitalGainTax || row.capitalGainTax || 0);
