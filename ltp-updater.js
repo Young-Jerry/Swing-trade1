@@ -14,32 +14,31 @@
 
   // ✅ FETCH WITH FULL DEBUG
   async function fetchLtpBySymbol(symbol) {
-    const url = `${API_URL}?symbol=${encodeURIComponent(symbol)}`;
-    console.log("📡 Fetching:", url);
+  const realUrl = `https://nepsetty.kokomo.workers.dev/api/stock?symbol=${symbol}`;
+  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(realUrl)}`;
 
-    try {
-      const response = await fetch(url, { cache: 'no-store' });
+  console.log("📡 Fetching via proxy:", proxyUrl);
 
-      if (!response.ok) {
-        console.error(`❌ API failed (${response.status}) for ${symbol}`);
-        return null;
-      }
+  try {
+    const response = await fetch(proxyUrl);
 
-      const payload = await response.json();
-      console.log(`📊 API response for ${symbol}:`, payload);
+    if (!response.ok) {
+      console.error("❌ Proxy fetch failed");
+      return null;
+    }
 
-      // ✅ FLEXIBLE LTP EXTRACTION
-      const ltp = Number(
-        payload?.ltp ??
-        payload?.data?.ltp ??
-        payload?.result?.ltp
-      );
+    const payload = await response.json();
+    console.log("📊 API response:", payload);
 
-      if (!Number.isFinite(ltp)) {
-        console.warn(`⚠️ No valid LTP for ${symbol}`);
-        return null;
-      }
+    const ltp = Number(payload?.ltp);
 
+    return Number.isFinite(ltp) ? ltp : null;
+
+  } catch (err) {
+    console.error("🔥 Proxy error:", err);
+    return null;
+  }
+}
       return ltp;
 
     } catch (err) {
