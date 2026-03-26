@@ -39,11 +39,17 @@
     };
   }
 
-  function calculateRoundTrip({ buyPrice, soldPrice, qty, buyIsWacc = true }) {
+  function capitalGainTaxRate(holdingDays = 0) {
+    const days = Math.max(0, Math.floor(Number(holdingDays || 0)));
+    return days > 365 ? 0.075 : 0.05;
+  }
+
+  function calculateRoundTrip({ buyPrice, soldPrice, qty, buyIsWacc = true, holdingDays = 0 }) {
     const buy = calculateTransaction('buy', buyPrice, qty, { buyIsWacc });
     const sell = calculateTransaction('sell', soldPrice, qty);
     const grossProfit = sell.totalPayable - buy.totalPayable;
-    const capitalGainTax = grossProfit > 0 ? grossProfit * 0.05 : 0;
+    const taxRate = capitalGainTaxRate(holdingDays);
+    const capitalGainTax = grossProfit > 0 ? grossProfit * taxRate : 0;
     const netProfit = grossProfit - capitalGainTax;
     return {
       buy,
@@ -53,6 +59,7 @@
       netRealizedAmount: sell.totalPayable - capitalGainTax,
       grossProfit,
       capitalGainTax,
+      capitalGainTaxRate: taxRate,
       profit: netProfit,
       netProfit,
     };
@@ -66,5 +73,6 @@
     calculateCommission,
     calculateTransaction,
     calculateRoundTrip,
+    capitalGainTaxRate,
   };
 })();

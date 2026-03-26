@@ -190,6 +190,7 @@
           <td>${fmtUnits(row.units)}</td>
           <td>${fmtNav(row.nav)}</td>
           <td>${currency(row.amount)}</td>
+          <td>${currency(row.currentValue || 0)}</td>
           ${historySip === 'ALL' ? '' : `<td class="actions-cell"><button class="btn-danger" type="button" data-action="delete" data-id="${row.id}">🗑️</button></td>`}
         `;
         tbody.appendChild(tr);
@@ -203,7 +204,7 @@
 
       if (!rows.length) {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="${historySip === 'ALL' ? 4 : 6}">No SIP history found for this selection.</td>`;
+        tr.innerHTML = `<td colspan="${historySip === 'ALL' ? 5 : 7}">No SIP history found for this selection.</td>`;
         tbody.appendChild(tr);
       }
     }
@@ -225,10 +226,11 @@
             <th>Units</th>
             <th>Avg</th>
             <th>Invested Amt</th>
+            <th>Total Current Value</th>
           </tr>
         `;
         return Array.from(merged.values())
-          .map((r) => ({ ...r, nav: r.units > 0 ? r.amount / r.units : 0 }))
+          .map((r) => ({ ...r, nav: r.units > 0 ? r.amount / r.units : 0, currentValue: (r.units > 0 ? r.units : 0) * Number(state.currentNav[r.sipName] || latestNav(r.sipName) || 0) }))
           .sort((a, b) => a.sipName.localeCompare(b.sipName));
       }
 
@@ -243,6 +245,7 @@
             units: Number(row.units || 0),
             amount: Number(row.amount || (Number(row.units || 0) * Number(row.nav || 0))),
             nav: Number(row.nav || 0),
+            currentValue: Number(row.units || 0) * Number(state.currentNav[sipName] || latestNav(sipName) || row.nav || 0),
           });
         });
       });
@@ -253,6 +256,7 @@
           <th>Units</th>
           <th>Avg</th>
           <th>Invested Amt</th>
+          <th>Total Current Value</th>
           <th>Actions</th>
         </tr>
       `;
