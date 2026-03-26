@@ -51,6 +51,7 @@
         const exited = readJson(EXITED_KEY);
         exited.push({
           id: crypto.randomUUID(),
+          exitedAt: new Date().toISOString(),
           type: record.source,
           name: record.name,
           qty: record.qty,
