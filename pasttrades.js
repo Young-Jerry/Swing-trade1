@@ -104,8 +104,16 @@
           <td>${normalized.type}</td>
           <td>${escapeHtml(normalized.name)}</td>
           <td>${currency(normalized.buyPrice)}</td>
-          <td>${currency(normalized.soldPrice || normalized.currentPrice || 0)}</td>
-          <td class="${profitClass(normalized.profit)}">${currency(normalized.profit)}<div class="subtitle">Tax: ${currency(normalized.capitalGainTax || 0)}</div></td>
+          <td>${currency(normalized.soldPrice || normalized.currentPrice || 0)}
+          </td><div class="subtitle">
+          Tax: ${currency(
+    (normalized.totalTax) ??
+    ((normalized.commission || 0) +
+     (normalized.sebonFee || 0) +
+     (normalized.dpCharge || 0) +
+     (normalized.capitalGainTax || 0))
+  )}
+</div>
           <td class="${profitClass(normalized.moneyReceivable)}">${currency(normalized.moneyReceivable)}</td>
           <td>${Math.floor(Number(normalized.holdingDays || 0))}</td>
           <td class="actions-cell">
