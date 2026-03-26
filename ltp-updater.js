@@ -12,8 +12,8 @@
       .trim();
   }
 
-  // ✅ FETCH WITH FULL DEBUG
-  async function fetchLtpBySymbol(symbol) {
+// ✅ FETCH WITH FULL DEBUG (CORS FIXED)
+async function fetchLtpBySymbol(symbol) {
   const realUrl = `https://nepsetty.kokomo.workers.dev/api/stock?symbol=${symbol}`;
   const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(realUrl)}`;
 
@@ -23,30 +23,27 @@
     const response = await fetch(proxyUrl);
 
     if (!response.ok) {
-      console.error("❌ Proxy fetch failed");
+      console.error(`❌ Proxy fetch failed for ${symbol}`);
       return null;
     }
 
     const payload = await response.json();
-    console.log("📊 API response:", payload);
+    console.log(`📊 API response for ${symbol}:`, payload);
 
     const ltp = Number(payload?.ltp);
 
-    return Number.isFinite(ltp) ? ltp : null;
+    if (!Number.isFinite(ltp)) {
+      console.warn(`⚠️ Invalid LTP for ${symbol}`);
+      return null;
+    }
+
+    return ltp; // ✅ ONLY return here
 
   } catch (err) {
-    console.error("🔥 Proxy error:", err);
+    console.error(`🔥 Proxy error for ${symbol}:`, err);
     return null;
   }
 }
-      return ltp;
-
-    } catch (err) {
-      console.error(`🔥 Fetch error for ${symbol}:`, err);
-      return null;
-    }
-  }
-
   // ✅ COLLECT SCRIPTS WITH DEBUG
   function collectPortfolioScripts() {
     const scripts = [];
