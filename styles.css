@@ -311,7 +311,7 @@ tr:hover {
 .journal-prompts { display: grid; gap: 14px; }
 .journal-field { display: grid; gap: 8px; }
 .journal-field span { font-weight: 600; }
-.journal-textarea { width: 100%; min-height: 170px; resize: vertical; line-height: 1.5; }
+.journal-textarea { width: 100%; min-height: 80px; resize: vertical; line-height: 1.5; }
 .sip-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
 .sip-tabs .active { border-color: var(--accent); color: var(--accent); }
 .section { animation: riseIn .32s ease-out; }
