@@ -12,7 +12,16 @@
 
     const dateNode = document.getElementById('journalDate');
     const datePicker = document.getElementById('journalDatePicker');
-    const textNode = document.getElementById('journalText');
+    const prompts = [
+      { id: 'journalQ1', key: 'learned' },
+      { id: 'journalQ2', key: 'assumedWithoutProof' },
+      { id: 'journalQ3', key: 'overconfident' },
+      { id: 'journalQ4', key: 'unnecessaryDoubt' },
+      { id: 'journalQ5', key: 'emotionalTriggers' },
+      { id: 'journalQ6', key: 'didWell' },
+      { id: 'journalQ7', key: 'improveTomorrow' }
+    ];
+    const textNodes = prompts.map((prompt) => ({ ...prompt, node: document.getElementById(prompt.id) }));
     const savedNode = document.getElementById('journalSaved');
     const prevBtn = document.getElementById('prevDay');
     const nextBtn = document.getElementById('nextDay');
@@ -44,12 +53,13 @@
       render();
     });
 
-    textNode.addEventListener('input', () => {
-      store[dateKey(currentDate)] = textNode.value;
-      localStorage.setItem(key, JSON.stringify(store));
-      savedNode.textContent = 'Saving...';
-      clearTimeout(timer);
-      timer = setTimeout(() => (savedNode.textContent = 'Saved ✓'), 350);
+    textNodes.forEach(({ key: promptKey, node }) => {
+      if (!node) return;
+      node.addEventListener('input', () => {
+        const entry = ensureEntry(currentDate);
+        entry[promptKey] = node.value;
+        persistStore();
+      });
     });
 
     function initPicker() {
@@ -60,10 +70,13 @@
     function render() {
       currentDate = clampDate(currentDate);
       ensureEntry(currentDate);
-      const k = dateKey(currentDate);
+      const entry = ensureEntry(currentDate);
       dateNode.textContent = currentDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
       datePicker.value = toInputDate(currentDate);
-      textNode.value = store[k] || '';
+      textNodes.forEach(({ key: promptKey, node }) => {
+        if (!node) return;
+        node.value = entry[promptKey] || '';
+      });
 
       prevBtn.disabled = stripTime(currentDate).getTime() === MIN_DATE.getTime();
       nextBtn.disabled = stripTime(currentDate).getTime() === today.getTime();
@@ -82,10 +95,31 @@
 
     function ensureEntry(d) {
       const k = dateKey(d);
-      if (store[k] === undefined) {
-        store[k] = '';
-        localStorage.setItem(key, JSON.stringify(store));
+      const value = store[k];
+      if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        store[k] = buildEntry(typeof value === 'string' ? value : '');
+        persistStore();
       }
+      return store[k];
+    }
+
+    function buildEntry(legacyText = '') {
+      return {
+        learned: legacyText,
+        assumedWithoutProof: '',
+        overconfident: '',
+        unnecessaryDoubt: '',
+        emotionalTriggers: '',
+        didWell: '',
+        improveTomorrow: ''
+      };
+    }
+
+    function persistStore() {
+      localStorage.setItem(key, JSON.stringify(store));
+      savedNode.textContent = 'Saving...';
+      clearTimeout(timer);
+      timer = setTimeout(() => (savedNode.textContent = 'Saved ✓'), 350);
     }
 
     function dateKey(d) {
