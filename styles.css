@@ -231,6 +231,18 @@ input, select, textarea, button {
   outline: none;
   font-size: 1rem;
 }
+input:not([type="checkbox"]):not([type="radio"]),
+textarea {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid #4a5b7e;
+  border-radius: 0;
+  padding: 10px 4px 8px;
+}
+input::placeholder,
+textarea::placeholder {
+  color: #8090ad;
+}
 button {
   min-height: 46px;
   min-width: 112px;
@@ -491,4 +503,53 @@ tr:hover {
 .allocation-table th,
 .allocation-table td {
   padding: 10px 12px;
+}
+
+
+.analytics-page .analytics-kpi-grid {
+  margin-bottom: 14px;
+}
+.analytics-summary-box {
+  margin-bottom: 14px;
+}
+.analytics-summary-grid {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+.analytics-controls {
+  display: grid;
+  gap: 10px;
+}
+.analytics-filter-toolbar,
+.analytics-toggle-toolbar {
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.analytics-filter-buttons,
+.analytics-toggle-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.analytics-filter-btn {
+  min-width: 64px;
+}
+.analytics-chart-wrap {
+  position: relative;
+  min-height: 360px;
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  background: linear-gradient(180deg, #111c2f 0%, #0d1525 100%);
+}
+.analytics-empty {
+  text-align: center;
+  margin-top: 12px;
+}
+
+@media (max-width: 768px) {
+  .analytics-chart-wrap {
+    min-height: 300px;
+  }
 }
