@@ -165,14 +165,7 @@
 
   function renderProfitPanel() {
     const rows = safeJson(localStorage.getItem('exitedTradesV2'), []);
-    const rangeSelect = document.getElementById('profitRange');
-
-    if (rangeSelect) {
-      fillProfitRanges(rangeSelect, rows);
-    }
-
-    const selected = rangeSelect ? Number(rangeSelect.value || rows.length || 0) : rows.length;
-    const filtered = selected > 0 ? rows.slice(-selected) : rows;
+    const filtered = rows;
 
     const totalProfit = filtered.reduce((sum, row) => sum + exactProfit(row), 0);
     const wins = filtered.filter((row) => exactProfit(row) > 0).length;
@@ -190,28 +183,6 @@
     if (lossNode) lossNode.textContent = String(losses);
 
     drawProfitChart(filtered);
-  }
-
-  function fillProfitRanges(selectNode, rows) {
-    const options = [
-      { label: 'All', value: rows.length || 0 },
-      { label: 'Last 7 trades', value: 7 },
-      { label: 'Last 30 trades', value: 30 },
-    ];
-
-    const previous = Number(selectNode.value || rows.length || 0);
-    selectNode.innerHTML = options
-      .filter((opt, idx) => idx === 0 || rows.length >= opt.value)
-      .map((opt) => `<option value="${opt.value}">${opt.label}</option>`)
-      .join('');
-
-    const values = [...selectNode.options].map((opt) => Number(opt.value));
-    selectNode.value = String(values.includes(previous) ? previous : values[0] || 0);
-
-    if (!selectNode.dataset.bound) {
-      selectNode.addEventListener('change', renderDashboard);
-      selectNode.dataset.bound = '1';
-    }
   }
 
   function drawProfitChart(rows) {

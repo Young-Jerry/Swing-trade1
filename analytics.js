@@ -3,17 +3,19 @@
   const MA_DEFAULT = 5;
 
   let chart;
-  let currentLimit = 'ALL';
 
   const nodes = {
     chart: document.getElementById('analyticsChart'),
     noData: document.getElementById('analyticsNoData'),
     resetZoomBtn: document.getElementById('resetZoomBtn'),
-    filterButtons: Array.from(document.querySelectorAll('.analytics-filter-btn')),
     togglePerTrade: document.getElementById('togglePerTrade'),
     toggleInvested: document.getElementById('toggleInvested'),
     toggleMovingAvg: document.getElementById('toggleMovingAvg'),
     movingAvgWindow: document.getElementById('movingAvgWindow'),
+    totalInvested: document.getElementById('analyticsTotalInvested'),
+    totalProfit: document.getElementById('analyticsTotalProfit'),
+    roi: document.getElementById('analyticsRoi'),
+    totalTrades: document.getElementById('analyticsTotalTrades'),
   };
 
   if (!nodes.chart) return;
@@ -22,15 +24,6 @@
   renderAnalytics();
 
   function bindEvents() {
-    nodes.filterButtons.forEach((button) => {
-      button.addEventListener('click', () => {
-        const { tradeLimit } = button.dataset;
-        currentLimit = tradeLimit === 'ALL' ? 'ALL' : Number(tradeLimit || 0);
-        nodes.filterButtons.forEach((item) => item.classList.toggle('active', item === button));
-        renderAnalytics();
-      });
-    });
-
     [nodes.togglePerTrade, nodes.toggleInvested, nodes.toggleMovingAvg, nodes.movingAvgWindow]
       .filter(Boolean)
       .forEach((el) => el.addEventListener('change', renderAnalytics));
@@ -47,16 +40,31 @@
 
   function renderAnalytics() {
     const exited = safeJson(localStorage.getItem(EXITED_KEY), []).map(normalizeExited);
-    const filtered = applyLimit(exited, currentLimit);
+    updateSummary(exited);
 
-    if (!filtered.length) {
+    if (!exited.length) {
       teardownChart();
       if (nodes.noData) nodes.noData.hidden = false;
       return;
     }
 
     if (nodes.noData) nodes.noData.hidden = true;
-    drawChart(filtered);
+    drawChart(exited);
+  }
+
+  function updateSummary(rows) {
+    const totals = rows.reduce((acc, row) => {
+      acc.invested += Number(row.invested || 0);
+      acc.profit += Number(row.profit || 0);
+      return acc;
+    }, { invested: 0, profit: 0 });
+
+    const roi = totals.invested > 0 ? (totals.profit / totals.invested) * 100 : 0;
+
+    if (nodes.totalInvested) nodes.totalInvested.textContent = money(totals.invested);
+    if (nodes.totalProfit) nodes.totalProfit.textContent = money(totals.profit);
+    if (nodes.roi) nodes.roi.textContent = `${round2(roi)}%`;
+    if (nodes.totalTrades) nodes.totalTrades.textContent = String(rows.length);
   }
 
   function drawChart(rows) {
@@ -79,21 +87,26 @@
     const primarySeries = usePerTrade ? profits : equityCurve;
     const movingAvg = computeMovingAverage(primarySeries, maWindow);
 
+    const zeroCrossings = computeZeroCrossings(primarySeries);
+
     const datasets = [
       {
         label: usePerTrade ? 'Per Trade Profit' : 'Profit Curve',
         data: primarySeries,
         segment: {
-          borderColor: (ctx) => ((ctx.p0.parsed.y < 0 || ctx.p1.parsed.y < 0) ? '#ea5a5a' : '#2ac07e'),
-          backgroundColor: (ctx) => ((ctx.p0.parsed.y < 0 || ctx.p1.parsed.y < 0) ? 'rgba(234,90,90,.16)' : 'rgba(42,192,126,.16)'),
+          borderColor: (ctx) => {
+            const y0 = Number(ctx.p0.parsed.y || 0);
+            const y1 = Number(ctx.p1.parsed.y || 0);
+            return (y0 < 0 || y1 < 0) ? '#ff5f5f' : '#3ed8a4';
+          },
         },
-        borderColor: '#2ac07e',
-        borderWidth: 2.5,
+        borderColor: '#3ed8a4',
+        borderWidth: 3,
         fill: false,
-        tension: 0.28,
-        pointRadius: 3,
+        tension: 0.22,
+        pointRadius: 0,
         pointHoverRadius: 5,
-        pointBackgroundColor: (ctx) => (ctx.raw >= 0 ? '#2ac07e' : '#ea5a5a'),
+        pointHitRadius: 10,
       },
     ];
 
@@ -101,23 +114,41 @@
       datasets.push({
         label: 'Invested Amount',
         data: investedCurve,
-        borderColor: 'rgba(244,185,66,.8)',
-        borderWidth: 1.8,
+        borderColor: '#69d2ff',
+        borderWidth: 2,
         fill: false,
-        tension: 0.2,
+        tension: 0.16,
         pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHitRadius: 10,
       });
     }
 
+
+    if (zeroCrossings.length) {
+      datasets.push({
+        label: 'Zero Intersections',
+        data: zeroCrossings,
+        parsing: false,
+        showLine: false,
+        pointRadius: 3.5,
+        pointHoverRadius: 0,
+        pointHitRadius: 0,
+        pointBackgroundColor: '#ffffff',
+        pointBorderColor: '#ffffff',
+      });
+    }
     if (showMa) {
       datasets.push({
         label: `MA (${maWindow})`,
         data: movingAvg,
-        borderColor: 'rgba(115,165,255,.9)',
-        borderWidth: 1.6,
+        borderColor: '#8bb8ff',
+        borderWidth: 1.8,
         fill: false,
-        borderDash: [6, 5],
+        borderDash: [7, 6],
         pointRadius: 0,
+        pointHoverRadius: 0,
+        pointHitRadius: 0,
         tension: 0.2,
       });
     }
@@ -129,45 +160,95 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
+        interaction: { mode: 'nearest', intersect: true, axis: 'xy' },
         plugins: {
           legend: { display: false },
+          tooltip: {
+            enabled: true,
+            mode: 'nearest',
+            intersect: true,
+            displayColors: false,
+            callbacks: {
+              title(items) {
+                return `Trade ${items[0]?.label ?? ''}`;
+              },
+              label(context) {
+                return `${context.dataset.label}: ${money(context.parsed.y)}`;
+              },
+            },
+          },
           zoom: {
-            pan: { enabled: true, mode: 'xy', modifierKey: null },
-            limits: { x: { min: 0 }, y: { min: 'original', max: 'original' } },
+            pan: { enabled: false },
+            limits: {
+              x: { min: 0, max: labels.length - 1, minRange: 1 },
+            },
             zoom: {
               wheel: { enabled: true },
-              drag: { enabled: true },
+              drag: { enabled: false },
               pinch: { enabled: true },
-              mode: 'xy',
+              mode: 'x',
+              onZoomComplete: ({ chart: activeChart }) => {
+                const scale = activeChart.scales.x;
+                const min = Math.max(0, Math.floor(scale.min));
+                const max = Math.min(labels.length - 1, Math.ceil(scale.max));
+                if (max - min < 1) {
+                  activeChart.zoomScale('x', { min, max: min + 1 }, 'none');
+                } else {
+                  activeChart.zoomScale('x', { min, max }, 'none');
+                }
+              },
             },
           },
         },
         scales: {
           x: {
             min: 0,
-            ticks: { color: '#9ba7bf' },
-            grid: { color: 'rgba(255,255,255,.05)' },
+            max: labels.length - 1,
+            ticks: {
+              color: '#b5d8ea',
+              callback(value) {
+                return Number.isInteger(value) ? value : '';
+              },
+            },
+            grid: { color: 'rgba(255,255,255,.06)' },
           },
           y: {
             ticks: {
-              color: '#9ba7bf',
+              color: '#b5d8ea',
               callback(value) {
-                return `Rs ${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+                return money(value);
               },
             },
-            grid: { color: 'rgba(255,255,255,.05)' },
+            border: { color: '#7bcfff' },
+            grid: {
+              color(ctx) {
+                return ctx.tick?.value === 0 ? 'rgba(255,255,255,.85)' : 'rgba(255,255,255,.07)';
+              },
+              lineWidth(ctx) {
+                return ctx.tick?.value === 0 ? 2.8 : 1;
+              },
+            },
           },
         },
       },
     });
   }
 
-  function applyLimit(rows, limit) {
-    if (limit === 'ALL') return rows;
-    const parsed = Number(limit || 0);
-    if (!parsed || parsed < 0) return rows;
-    return rows.slice(-parsed);
+
+  function computeZeroCrossings(series) {
+    const points = [];
+    for (let i = 1; i < series.length; i += 1) {
+      const prev = Number(series[i - 1] || 0);
+      const curr = Number(series[i] || 0);
+      if (prev === 0) points.push({ x: i - 1, y: 0 });
+      const crossed = (prev < 0 && curr > 0) || (prev > 0 && curr < 0);
+      if (crossed) {
+        const t = Math.abs(prev) / (Math.abs(prev) + Math.abs(curr));
+        points.push({ x: round2((i - 1) + t), y: 0 });
+      }
+      if (curr === 0) points.push({ x: i, y: 0 });
+    }
+    return points;
   }
 
   function normalizeExited(row) {
@@ -205,6 +286,10 @@
 
   function round2(value) {
     return Math.round(Number(value || 0) * 100) / 100;
+  }
+
+  function money(value) {
+    return `Rs ${Number(value || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
   }
 
   function teardownChart() {
