@@ -37,7 +37,12 @@
     const change = Number(delta || 0);
     if (!Number.isFinite(change) || change === 0) return readCash();
 
-    const next = readCash() + change;
+    const current = readCash();
+    const next = current + change;
+    if (next < 0) {
+      window.alert('Not enough cash balance');
+      return current;
+    }
     setCash(next);
 
     const ledger = readLedger();
@@ -70,8 +75,13 @@
       delta: safeNextDelta,
       updatedAt: new Date().toISOString(),
     };
+    const nextCash = readCash() - oldDelta + safeNextDelta;
+    if (nextCash < 0) {
+      window.alert('Not enough cash balance');
+      return;
+    }
     saveLedger(ledger);
-    setCash(readCash() - oldDelta + safeNextDelta);
+    setCash(nextCash);
   }
 
   function deleteLedgerEntry(id) {
@@ -79,8 +89,18 @@
     const index = ledger.findIndex((row) => row.id === id);
     if (index < 0) return;
     const [removed] = ledger.splice(index, 1);
+    const nextCash = readCash() - Number(removed.delta || 0);
+    if (nextCash < 0) {
+      window.alert('Not enough cash balance');
+      return;
+    }
     saveLedger(ledger);
-    setCash(readCash() - Number(removed.delta || 0));
+    setCash(nextCash);
+  }
+
+  function clearLedgerHistory() {
+    saveLedger([]);
+    window.dispatchEvent(new CustomEvent('pms-cash-updated', { detail: { cash: readCash() } }));
   }
 
   function investedCapital() {
@@ -98,23 +118,56 @@
 
   function renderTopWidget() {
     const nav = document.querySelector('.nav');
-    if (!nav || nav.querySelector('.cash-widget')) return;
+    if (!nav) return;
 
-    const wrap = document.createElement('div');
-    wrap.className = 'cash-widget';
-    wrap.innerHTML = `
-      <div class="cash-widget-value">
-        <span class="cash-widget-label">Cash Balance</span>
-        <strong id="topCashBalance">Rs 0</strong>
-      </div>
-      <a id="topCashLedgerBtn" class="btn-cash btn-link" href="cash_ledger.html" title="Open cash ledger" aria-label="Open cash ledger">💵</a>
-    `;
-    nav.appendChild(wrap);
+    const logo = nav.querySelector('.logo');
+    if (logo) {
+      logo.innerHTML = `
+        <div class="logo-main">PMS</div>
+        <div class="market-timer" id="marketTimer">⏱️ <span class="market-dot market-dot-red"></span> NEPSE Time --:--:--</div>
+      `;
+    }
+
+    if (!nav.querySelector('.cash-widget')) {
+      const wrap = document.createElement('a');
+      wrap.className = 'cash-widget cash-widget-link';
+      wrap.href = 'cash_ledger.html';
+      wrap.title = 'Open cash ledger';
+      wrap.setAttribute('aria-label', 'Open cash ledger');
+      wrap.innerHTML = `<strong id="topCashBalance">Cash Balance Rs 0</strong>`;
+      nav.appendChild(wrap);
+    }
+
+    startMarketTimer();
+  }
+
+  function startMarketTimer() {
+    const timerNode = document.getElementById('marketTimer');
+    if (!timerNode || timerNode.dataset.bound === '1') return;
+    timerNode.dataset.bound = '1';
+
+    const tick = () => {
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+      const seconds = now.getSeconds();
+      const day = now.getDay();
+      const inPremarket = day !== 5 && day !== 6 && hours === 10 && minutes >= 45;
+      const inMarket = day !== 5 && day !== 6 && (hours >= 11 && hours < 15);
+      const stateClass = inMarket ? 'market-dot-green' : inPremarket ? 'market-dot-orange' : 'market-dot-red';
+      const hh = String(hours).padStart(2, '0');
+      const mm = String(minutes).padStart(2, '0');
+      const ss = String(seconds).padStart(2, '0');
+      timerNode.innerHTML = `<span class="market-dot ${stateClass}"></span> NEPSE Time ${hh}-${mm}-${ss}`;
+    };
+
+    tick();
+    setInterval(tick, 1000);
   }
 
   function updateWidgets() {
     const topNode = document.getElementById('topCashBalance');
-    if (topNode) topNode.textContent = money(readCash());
+    if (topNode) topNode.textContent = `Cash Balance Rs ${roundedCash(readCash())}`;
 
     const dashboardCash = document.getElementById('dashboardCashBalance');
     if (dashboardCash) dashboardCash.textContent = money(readCash());
@@ -132,6 +185,12 @@
     }
   }
 
+  function roundedCash(value) {
+    const amount = Number(value || 0);
+    if (amount <= 0) return 0;
+    return Math.ceil(amount);
+  }
+
   function money(value) {
     const rounded = Number(value || 0);
     return `Rs ${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(rounded)}`;
@@ -146,6 +205,7 @@
     readLedger,
     updateLedgerEntry,
     deleteLedgerEntry,
+    clearLedgerHistory,
     investedCapital,
     updateWidgets,
   };

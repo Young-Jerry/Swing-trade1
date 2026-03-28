@@ -32,7 +32,7 @@ body {
   border-bottom: 1px solid var(--border);
 }
 .nav {
-  max-width: 1300px;
+  max-width: 1400px;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -160,36 +160,32 @@ h1, h2, h3 { margin-top: 0; letter-spacing: .2px; color: #f4f8ff; }
 
 .cash-widget {
   margin-left: auto;
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 8px;
-  border: 1px solid var(--border);
+  padding: 10px 14px;
+  border: 1px solid #f4b942;
   border-radius: 12px;
-  background: #0f1828;
-}
-.btn-cash {
-  border-color: #f4b942;
   background: linear-gradient(180deg, #ffd76f, #f4b942);
   color: #2f2204;
-  box-shadow: 0 8px 18px rgba(244, 185, 66, .35), inset 0 1px 0 rgba(255, 255, 255, .35);
+  text-decoration: none;
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgba(244, 185, 66, .3);
 }
-.btn-cash:hover {
-  filter: brightness(1.04);
-  transform: translateY(-2px) scale(1.03);
-}
-.cash-widget-value {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.1;
-}
-.cash-widget-label {
-  color: var(--muted);
-  font-size: .74rem;
+.cash-widget:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
 }
 #topCashBalance {
-  font-size: .96rem;
+  font-size: .92rem;
 }
+.logo-main { font-weight: 800; letter-spacing: .4px; }
+.market-timer { font-size: .75rem; color: var(--muted); display:flex; align-items:center; gap:6px; margin-top:3px; }
+.market-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+.market-dot-red { background:#ea5a5a; }
+.market-dot-green { background:#2ac07e; }
+.market-dot-orange { background:#f4b942; }
 
 .chart-tooltip {
   position: absolute;
@@ -230,14 +226,6 @@ input, select, textarea, button {
   padding: 12px 14px;
   outline: none;
   font-size: 1rem;
-}
-input:not([type="checkbox"]):not([type="radio"]),
-textarea {
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid #4a5b7e;
-  border-radius: 0;
-  padding: 10px 4px 8px;
 }
 input::placeholder,
 textarea::placeholder {
@@ -553,3 +541,5 @@ tr:hover {
     min-height: 300px;
   }
 }
+
+.chart-footer-controls { margin-top: 10px; display: flex; justify-content: flex-start; }
