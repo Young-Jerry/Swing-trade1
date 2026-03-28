@@ -9,13 +9,13 @@
 <body>
   <header class="header">
     <nav class="nav">
-      <div class="logo">PMS</div>
+      <div class="logo"></div>
       <ul class="nav-links">
         <li><a href="index.html">Dashboard</a></li>
-<li><a href="trades.html">Trades</a></li>
-<li><a href="longterm.html">Long-t</a></li>
+<li><a href="trades.html">trades</a></li>
+<li><a href="longterm.html">Long-Term</a></li>
 <li><a href="mf.html">SIP</a></li>
-<li><a href="pasttrades.html">Past trades</a></li>
+<li><a href="pasttrades.html">Past-Trades</a></li>
 <li><a href="analytics.html">Charts</a></li>
 <li><a class="active" href="journal.html">✏️</a></li>
 <li><a href="share_calculator.html">🧮</a></li>
@@ -24,13 +24,14 @@
   </header>
 
   <main class="container">
-    <h1>PMS</h1>
-    <p class="subtitle">Allowed date range: March 25, 2026 to today (no past/future dates).</p>
+    <h1>✏️</h1>
+    <p class="subtitle">March 28, 2026</p>
 
     <section class="card section">
       <div class="toolbar">
         <div>
           <h3 id="journalDate" style="margin:0;"></h3>
+          <div class="subtitle" id="journalNumericDate"></div>
           <input id="journalDatePicker" type="date" />
           <div class="save-indicator" id="journalSaved">Saved ✓</div>
         </div>
@@ -41,32 +42,32 @@
       </div>
       <div class="journal-prompts">
         <label class="journal-field">
-          <span>1. What I learned today:</span>
-          <textarea id="journalQ1" class="journal-textarea" placeholder="Write what you learned today..."></textarea>
+          <span>📖 1. What I learned today (left)</span>
+          <textarea id="journalQ1" class="journal-textarea" placeholder="Write what you learned today…"></textarea>
         </label>
         <label class="journal-field">
-          <span>2. What I assumed without proof:</span>
-          <textarea id="journalQ2" class="journal-textarea" placeholder="Write assumptions you made without proof..."></textarea>
+          <span>🔍 2. What I assumed without proof (right)</span>
+          <textarea id="journalQ2" class="journal-textarea" placeholder="Write assumptions you made without proof…"></textarea>
         </label>
         <label class="journal-field">
-          <span>3. Where I was overconfident:</span>
-          <textarea id="journalQ3" class="journal-textarea" placeholder="Write where overconfidence showed up..."></textarea>
+          <span>⚡ 3. Where I was overconfident (left)</span>
+          <textarea id="journalQ3" class="journal-textarea" placeholder="Write where overconfidence showed up…"></textarea>
         </label>
         <label class="journal-field">
-          <span>4. Where I doubted myself unnecessarily:</span>
-          <textarea id="journalQ4" class="journal-textarea" placeholder="Write where unnecessary doubt appeared..."></textarea>
+          <span>🤔 4. Where I doubted myself unnecessarily (right)</span>
+          <textarea id="journalQ4" class="journal-textarea" placeholder="Write where unnecessary doubt appeared…"></textarea>
         </label>
         <label class="journal-field">
-          <span>5. Emotional triggers I noticed:</span>
-          <textarea id="journalQ5" class="journal-textarea" placeholder="Write emotional triggers you noticed..."></textarea>
+          <span>🧠 5. Emotional triggers I noticed (left)</span>
+          <textarea id="journalQ5" class="journal-textarea" placeholder="Write emotional triggers you noticed…"></textarea>
         </label>
         <label class="journal-field">
-          <span>6. One thing I did well:</span>
-          <textarea id="journalQ6" class="journal-textarea" placeholder="Write one thing you did well..."></textarea>
+          <span>✅ 6. One thing I did well (right)</span>
+          <textarea id="journalQ6" class="journal-textarea" placeholder="Write one thing you did well…"></textarea>
         </label>
         <label class="journal-field">
-          <span>7. One thing I will improve tomorrow:</span>
-          <textarea id="journalQ7" class="journal-textarea" placeholder="Write one thing to improve tomorrow..."></textarea>
+          <span>🎯 7. One thing I will improve tomorrow (bottom left to right)</span>
+          <textarea id="journalQ7" class="journal-textarea" placeholder="Write one thing to improve tomorrow…"></textarea>
         </label>
       </div>
     </section>

@@ -123,8 +123,8 @@
     const logo = nav.querySelector('.logo');
     if (logo) {
       logo.innerHTML = `
-        <div class="logo-main">PMS</div>
-        <div class="market-timer" id="marketTimer">⏱️ <span class="market-dot market-dot-red"></span> NEPSE Time --:--:--</div>
+        <div class="logo-main">Portfolio Management System</div>
+        <div class="market-timer" id="marketTimer"><span class="market-dot market-dot-red"></span> NEPSE --:--:--</div>
       `;
     }
 
@@ -134,7 +134,7 @@
       wrap.href = 'cash_ledger.html';
       wrap.title = 'Open cash ledger';
       wrap.setAttribute('aria-label', 'Open cash ledger');
-      wrap.innerHTML = `<strong id="topCashBalance">Cash Balance Rs 0</strong>`;
+      wrap.innerHTML = `<strong id="topCashBalance">[Cash Balance<br />Rs 0]</strong>`;
       nav.appendChild(wrap);
     }
 
@@ -158,7 +158,7 @@
       const hh = String(hours).padStart(2, '0');
       const mm = String(minutes).padStart(2, '0');
       const ss = String(seconds).padStart(2, '0');
-      timerNode.innerHTML = `<span class="market-dot ${stateClass}"></span> NEPSE Time ${hh}:${mm}:${ss}`;
+      timerNode.innerHTML = `<span class="market-dot ${stateClass}"></span> NEPSE ${hh}:${mm}:${ss}`;
     };
 
     tick();
@@ -167,7 +167,7 @@
 
   function updateWidgets() {
     const topNode = document.getElementById('topCashBalance');
-    if (topNode) topNode.textContent = `Cash Balance Rs ${roundedCash(readCash())}`;
+    if (topNode) topNode.innerHTML = `[Cash Balance<br />Rs ${roundedCash(readCash())}]`;
 
     const dashboardCash = document.getElementById('dashboardCashBalance');
     if (dashboardCash) dashboardCash.textContent = money(readCash());

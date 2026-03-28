@@ -14,6 +14,8 @@
     const exitRecord = document.getElementById('exitRecord');
     const soldPriceInput = document.getElementById('soldPrice');
     const holdingDaysInput = document.getElementById('holdingDays');
+    const selectedQty = document.getElementById('selectedQty');
+    const selectedLtp = document.getElementById('selectedLtp');
     const exitedBody = document.querySelector('#exitedTable tbody');
     const pastTradeFilter = document.getElementById('pastTradeFilter');
     const pastTradeMetrics = document.getElementById('pastTradeMetrics');
@@ -26,6 +28,7 @@
 
     function bindEvents() {
       exitType.addEventListener('change', renderRecordOptions);
+      exitRecord.addEventListener('change', updateSelectedRecordInfo);
       if (pastTradeFilter) pastTradeFilter.addEventListener('input', renderExited);
 
       exitForm.addEventListener('submit', (e) => {
@@ -86,12 +89,22 @@
       const records = getActiveRecords(type);
 
       exitRecord.innerHTML = records
-        .map((row) => `<option value="${row.id}">${escapeHtml(row.name)} — Qty/Units: ${fmtQty(row.qty)}</option>`)
+        .map((row) => `<option value="${row.id}">${escapeHtml(row.name)} Qty ${fmtQty(row.qty)} LTP ${fmtQty(row.currentPrice)}</option>`)
         .join('');
 
       if (!records.length) {
         exitRecord.innerHTML = '<option value="">No records available</option>';
       }
+      updateSelectedRecordInfo();
+    }
+
+    function updateSelectedRecordInfo() {
+      if (!selectedQty || !selectedLtp) return;
+      const type = exitType.value;
+      const records = getActiveRecords(type);
+      const row = records.find((item) => item.id === exitRecord.value);
+      selectedQty.value = row ? fmtQty(row.qty) : '';
+      selectedLtp.value = row ? currency(row.currentPrice) : '';
     }
 
     function renderExited() {

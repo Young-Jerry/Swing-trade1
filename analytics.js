@@ -3,6 +3,25 @@
   const MA_DEFAULT = 5;
 
   let chart;
+  const hoverGuidePlugin = {
+    id: 'hoverGuidePlugin',
+    afterDatasetsDraw(activeChart) {
+      const tooltip = activeChart.tooltip;
+      if (!tooltip || !tooltip.getActiveElements().length) return;
+      const activePoint = tooltip.getActiveElements()[0].element;
+      if (!activePoint) return;
+      const { ctx, chartArea } = activeChart;
+      ctx.save();
+      ctx.setLineDash([5, 5]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(activePoint.x, chartArea.top);
+      ctx.lineTo(activePoint.x, chartArea.bottom);
+      ctx.stroke();
+      ctx.restore();
+    },
+  };
 
   const nodes = {
     chart: document.getElementById('analyticsChart'),
@@ -93,18 +112,14 @@
       {
         label: usePerTrade ? 'Per Trade Profit' : 'Profit Curve',
         data: primarySeries,
-        segment: {
-          borderColor: (ctx) => {
-            const y0 = Number(ctx.p0.parsed.y || 0);
-            const y1 = Number(ctx.p1.parsed.y || 0);
-            return (y0 < 0 || y1 < 0) ? '#ff5f5f' : '#3ed8a4';
-          },
-        },
         borderColor: '#3ed8a4',
         borderWidth: 3,
         fill: false,
         tension: 0.22,
-        pointRadius: 0,
+        pointRadius: 2.2,
+        pointStyle: 'circle',
+        pointBackgroundColor: '#ffffff',
+        pointBorderWidth: 0,
         pointHoverRadius: 5,
         pointHitRadius: 10,
       },
@@ -118,7 +133,10 @@
         borderWidth: 2,
         fill: false,
         tension: 0.16,
-        pointRadius: 0,
+        pointRadius: 2.2,
+        pointStyle: 'circle',
+        pointBackgroundColor: '#ffffff',
+        pointBorderWidth: 0,
         pointHoverRadius: 5,
         pointHitRadius: 10,
       });
@@ -157,16 +175,17 @@
     chart = new Chart(nodes.chart, {
       type: 'line',
       data: { labels, datasets },
+      plugins: [hoverGuidePlugin],
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        interaction: { mode: 'nearest', intersect: true, axis: 'xy' },
+        interaction: { mode: 'nearest', intersect: false, axis: 'xy' },
         plugins: {
           legend: { display: false },
           tooltip: {
             enabled: true,
             mode: 'nearest',
-            intersect: true,
+            intersect: false,
             displayColors: false,
             callbacks: {
               title(items) {
