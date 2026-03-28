@@ -9,6 +9,7 @@
   const nodes = {
     chart: document.getElementById('analyticsChart'),
     noData: document.getElementById('analyticsNoData'),
+    togglePerTrade: document.getElementById('togglePerTrade'),
     toggleInvested: document.getElementById('toggleInvested'),
     toggleMovingAvg: document.getElementById('toggleMovingAvg'),
     resetZoomBtn: document.getElementById('resetZoomBtn'),
@@ -36,6 +37,7 @@
       });
     });
 
+    if (nodes.togglePerTrade) nodes.togglePerTrade.addEventListener('change', renderAnalytics);
     if (nodes.toggleInvested) nodes.toggleInvested.addEventListener('change', renderAnalytics);
     if (nodes.toggleMovingAvg) nodes.toggleMovingAvg.addEventListener('change', renderAnalytics);
     if (nodes.resetZoomBtn) {
@@ -66,42 +68,38 @@
   }
 
   function drawChart(rows) {
-    const labels = rows.map((_, index) => `Trade ${index + 1}`);
     const tradeNumbers = rows.map((_, index) => index + 1);
-    const cumulativeProfit = [];
-    const investedSeries = [];
-    let runningProfit = 0;
-    let runningInvested = 0;
-
-    rows.forEach((row) => {
-      runningProfit += row.profit;
-      runningInvested += row.invested;
-      cumulativeProfit.push(round2(runningProfit));
-      investedSeries.push(round2(runningInvested));
-    });
-
-    const movingAverage = computeMovingAverage(cumulativeProfit, MA_WINDOW);
+    const perTradeProfit = rows.map((row) => round2(row.profit));
+    const equityCurve = computeCumulativeSeries(perTradeProfit);
+    const investedSeries = computeCumulativeSeries(rows.map((row) => round2(row.invested)));
+    const isPerTradeMode = Boolean(nodes.togglePerTrade && nodes.togglePerTrade.checked);
+    const primarySeries = isPerTradeMode ? perTradeProfit : equityCurve;
+    const primaryLabel = isPerTradeMode ? 'Per Trade Profit' : 'Equity Curve';
+    const movingAverage = computeMovingAverage(primarySeries, MA_WINDOW);
+    const labels = equityCurve.map((_, index) => index + 1);
     const showInvested = Boolean(nodes.toggleInvested && nodes.toggleInvested.checked);
     const showMovingAvg = Boolean(nodes.toggleMovingAvg && nodes.toggleMovingAvg.checked);
 
     const datasets = [
       {
-        label: 'Total Profit',
-        data: cumulativeProfit,
-        borderColor: '#4f8cff',
+        label: primaryLabel,
+        data: primarySeries,
+        borderColor: '#22c55e',
         backgroundColor: (ctx) => {
           const { chart: chartRef } = ctx;
           const area = chartRef.chartArea;
-          if (!area) return 'rgba(79, 140, 255, 0.25)';
+          if (!area) return 'rgba(34, 197, 94, 0.20)';
           const gradient = chartRef.ctx.createLinearGradient(0, area.top, 0, area.bottom);
-          gradient.addColorStop(0, 'rgba(79, 140, 255, 0.42)');
-          gradient.addColorStop(1, 'rgba(79, 140, 255, 0.06)');
+          gradient.addColorStop(0, 'rgba(34, 197, 94, 0.35)');
+          gradient.addColorStop(1, 'rgba(34, 197, 94, 0.05)');
           return gradient;
         },
+        borderWidth: 3,
         fill: true,
         tension: 0.4,
-        pointRadius: 4,
-        pointHoverRadius: 6,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHitRadius: 10,
         pointBackgroundColor: '#d8e6ff',
       },
     ];
@@ -110,12 +108,14 @@
       datasets.push({
         label: 'Invested Amount',
         data: investedSeries,
-        borderColor: '#f4b942',
+        borderColor: 'rgba(244, 185, 66, 0.65)',
         backgroundColor: 'rgba(244, 185, 66, 0.08)',
-        borderWidth: 2,
+        borderWidth: 1.5,
         fill: false,
         tension: 0.4,
         pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHitRadius: 10,
       });
     }
 
@@ -123,13 +123,15 @@
       datasets.push({
         label: `MA (${MA_WINDOW})`,
         data: movingAverage,
-        borderColor: '#2ac07e',
+        borderColor: 'rgba(42, 192, 126, 0.60)',
         backgroundColor: 'rgba(42, 192, 126, 0.08)',
         borderDash: [7, 5],
-        borderWidth: 2,
+        borderWidth: 1.5,
         fill: false,
         tension: 0.4,
         pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHitRadius: 10,
       });
     }
 
@@ -140,6 +142,10 @@
         responsive: true,
         maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
+        animation: {
+          duration: 800,
+          easing: 'easeOutQuart',
+        },
         plugins: {
           legend: {
             labels: {
@@ -155,23 +161,24 @@
                 return `Trade ${tradeNumbers[item.dataIndex]}`;
               },
               label(context) {
+                if (context.datasetIndex !== 0) return null;
                 const index = context.dataIndex;
                 if (index == null) return '';
                 const lines = [];
-                const profit = cumulativeProfit[index] ?? 0;
-                lines.push(`Profit: ${currency(profit)}`);
+                const equityValue = primarySeries[index] ?? 0;
+                lines.push(`Equity: ${currency(equityValue)}`);
 
                 if (showInvested) {
                   const invested = investedSeries[index] ?? 0;
                   lines.push(`Invested: ${currency(invested)}`);
-                  lines.push(`Diff: ${signedCurrency(profit - invested)}`);
+                  lines.push(`Diff: ${signedCurrency(equityValue - invested)}`);
                 }
 
                 if (showMovingAvg) {
                   const maValue = movingAverage[index];
                   if (Number.isFinite(maValue)) {
                     lines.push(`MA: ${currency(maValue)}`);
-                    lines.push(`Diff from MA: ${signedCurrency(profit - maValue)}`);
+                    lines.push(`Diff: ${signedCurrency(equityValue - maValue)}`);
                   }
                 }
 
@@ -197,8 +204,11 @@
         },
         scales: {
           x: {
-            ticks: { color: '#9ba7bf' },
-            grid: { color: 'rgba(255,255,255,0.06)' },
+            ticks: {
+              color: '#9ba7bf',
+              maxTicksLimit: 8,
+            },
+            grid: { color: 'rgba(255,255,255,0.05)' },
           },
           y: {
             ticks: {
@@ -207,7 +217,7 @@
                 return `Rs ${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
               },
             },
-            grid: { color: 'rgba(255,255,255,0.08)' },
+            grid: { color: 'rgba(255,255,255,0.05)' },
           },
         },
       },
@@ -279,6 +289,14 @@
       const set = series.slice(start, index + 1);
       const avg = set.reduce((sum, value) => sum + value, 0) / set.length;
       return round2(avg);
+    });
+  }
+
+  function computeCumulativeSeries(series) {
+    let runningTotal = 0;
+    return series.map((value) => {
+      runningTotal += Number(value || 0);
+      return round2(runningTotal);
     });
   }
 
