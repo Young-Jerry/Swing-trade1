@@ -9,13 +9,13 @@
 <body>
   <header class="header">
     <nav class="nav">
-      <div class="logo">PMS</div>
+      <div class="logo"></div>
       <ul class="nav-links">
         <li><a href="index.html">Dashboard</a></li>
-<li><a class="active" href="trades.html">Trades</a></li>
-<li><a href="longterm.html">Long-t</a></li>
+<li><a class="active" href="trades.html">trades</a></li>
+<li><a href="longterm.html">Long-Term</a></li>
 <li><a href="mf.html">SIP</a></li>
-<li><a href="pasttrades.html">Past trades</a></li>
+<li><a href="pasttrades.html">Past-Trades</a></li>
 <li><a href="analytics.html">Charts</a></li>
 <li><a href="journal.html">✏️</a></li>
 <li><a href="share_calculator.html">🧮</a></li>
@@ -26,19 +26,28 @@
   <main class="container" data-portfolio-key="trades" data-portfolio-title="Trades Portfolio" data-show-ranges="true">
     <section class="page-heading">
       <div>
-        <h1>PMS</h1>
-        <p class="subtitle">Trades Portfolio</p>
+        <h1>trades</h1>
+        <p class="subtitle">NEPSE Trading Portfolio</p>
       </div>
       <div class="page-heading-actions">
-        <button class="btn-primary" type="button" data-update-ltp-btn>Update LTP</button>
+        <button class="btn-primary" type="button" data-update-ltp-btn>↻ Update LTP</button>
         <span class="save-indicator" data-update-ltp-status>Ready</span>
       </div>
     </section>
 
     <section class="card section">
+      <div class="summary-grid">
+        <div class="summary-item">Total Invested: <strong id="totalInvested">Rs 0</strong></div>
+        <div class="summary-item">Total Current Value: <strong id="totalCurrent">Rs 0</strong></div>
+        <div class="summary-item">Total P/L: <strong id="totalPL">Rs 0</strong></div>
+      </div>
+    </section>
+
+    <section class="card section">
       <div class="toolbar">
-        <h3>Add Entry</h3>
+        <h3>Add Entry / ExitPosition</h3>
         <div style="display:flex;gap:8px;align-items:center;">
+          <a class="btn-secondary btn-link" href="pasttrades.html">ExitPosition</a>
           <button id="massEditBtn" class="btn-secondary" type="button">Mass Edit</button>
           <div class="save-indicator" id="saveIndicator">Saved ✓</div>
         </div>
@@ -57,16 +66,8 @@
 
     <section class="card section">
       <div class="toolbar"><h3>Script Filter</h3></div>
-      <input id="scriptFilter" type="text" placeholder="Filter by script" />
+      <input id="scriptFilter" type="text" placeholder="Filter by search" />
       <div id="pageAllocationBreakdown"></div>
-    </section>
-
-<section class="card section">
-      <div class="summary-grid">
-        <div class="summary-item">Total Invested: <strong id="totalInvested">Rs 0</strong></div>
-        <div class="summary-item">Total Current Value: <strong id="totalCurrent">Rs 0</strong></div>
-        <div class="summary-item">Total P/L: <strong id="totalPL">Rs 0</strong></div>
-      </div>
     </section>
 
     <section class="card section">

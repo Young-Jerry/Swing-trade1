@@ -9,13 +9,13 @@
 <body>
   <header class="header">
     <nav class="nav">
-      <div class="logo">PMS</div>
+      <div class="logo"></div>
       <ul class="nav-links">
         <li><a class="active" href="index.html">Dashboard</a></li>
-<li><a href="trades.html">Trades</a></li>
-<li><a href="longterm.html">Long-t</a></li>
+<li><a href="trades.html">trades</a></li>
+<li><a href="longterm.html">Long-Term</a></li>
 <li><a href="mf.html">SIP</a></li>
-<li><a href="pasttrades.html">Past trades</a></li>
+<li><a href="pasttrades.html">Past-Trades</a></li>
 <li><a href="analytics.html">Charts</a></li>
 <li><a href="journal.html">✏️</a></li>
 <li><a href="share_calculator.html">🧮</a></li>
@@ -31,7 +31,7 @@
         <p class="subtitle">PMS · NEPSE Overview (NPR)</p>
       </div>
       <div class="page-heading-actions">
-        <button class="btn-primary" type="button" data-update-ltp-btn>Update LTP</button>
+        <button class="btn-primary" type="button" data-update-ltp-btn>↻ Update LTP</button>
         <span class="save-indicator" data-update-ltp-status>Ready</span>
       </div>
     </section>
@@ -65,24 +65,6 @@
         <h3>Allocation Breakdown</h3>
         <ul class="legend" id="allocationLegend"></ul>
       </article>
-    </section>
-
-
-    <section class="card profit-panel">
-      <div class="profit-header">
-        <div class="profit-stat">
-          <h4>Profit / Loss</h4>
-          <div class="metric"><span id="profitValue" class="value-profit">Rs 0</span></div>
-                  </div>
-        <div class="profit-stat">
-          <h4>Trade Outcome</h4>
-          <div class="metric"><span>WIN (sold in profit)</span><span id="winCount" class="value-profit">0</span></div>
-          <div class="metric"><span>LOSS (sold in loss)</span><span id="lossCount" class="value-loss">0</span></div>
-        </div>
-      </div>
-      <div class="profit-chart-wrap">
-        <canvas id="profitChart" class="profit-chart" width="960" height="260" aria-label="Profit loss history chart"></canvas>
-      </div>
     </section>
 
     <section class="card section">

@@ -38,7 +38,6 @@
     if (combinedNode) combinedNode.textContent = currency(combined);
 
     renderPie(totals, combined);
-    renderProfitPanel();
 
 
     if (window.PmsCapital && typeof window.PmsCapital.updateWidgets === 'function') {
@@ -161,104 +160,6 @@
       const nav = Number((state.currentNav || {})[sipName] || rows[rows.length - 1]?.nav || 0);
       return { script: sipName, value: units * nav };
     });
-  }
-
-  function renderProfitPanel() {
-    const rows = safeJson(localStorage.getItem('exitedTradesV2'), []);
-    const filtered = rows;
-
-    const totalProfit = filtered.reduce((sum, row) => sum + exactProfit(row), 0);
-    const wins = filtered.filter((row) => exactProfit(row) > 0).length;
-    const losses = filtered.filter((row) => exactProfit(row) < 0).length;
-
-    const profitNode = document.getElementById('profitValue');
-    if (profitNode) {
-      profitNode.textContent = currency(totalProfit);
-      profitNode.className = totalProfit >= 0 ? 'value-profit' : 'value-loss';
-    }
-
-    const winNode = document.getElementById('winCount');
-    if (winNode) winNode.textContent = String(wins);
-    const lossNode = document.getElementById('lossCount');
-    if (lossNode) lossNode.textContent = String(losses);
-
-    drawProfitChart(filtered);
-  }
-
-  function drawProfitChart(rows) {
-    const canvas = document.getElementById('profitChart');
-    const tooltip = document.getElementById('chartTooltip');
-    if (!canvas) return;
-
-    const context = canvas.getContext('2d');
-    if (!context) return;
-
-    const points = [{ index: 0, total: 0 }];
-    let cumulative = 0;
-    rows.forEach((row, index) => {
-      cumulative += exactProfit(row);
-      points.push({ index: index + 1, total: cumulative });
-    });
-
-    const padding = { left: 20, right: 20, top: 16, bottom: 20 };
-    const plotWidth = canvas.width - padding.left - padding.right;
-    const plotHeight = canvas.height - padding.top - padding.bottom;
-    const values = points.map((point) => point.total);
-    const minY = Math.min(0, ...values);
-    const maxY = Math.max(0, ...values);
-    const spread = maxY - minY || 1;
-    const yPadding = spread * 0.08;
-    const minScale = minY - yPadding;
-    const maxScale = maxY + yPadding;
-    const yRange = maxScale - minScale || 1;
-
-    const toX = (index) => padding.left + (index / Math.max(points.length - 1, 1)) * plotWidth;
-    const toY = (value) => padding.top + (1 - (value - minScale) / yRange) * plotHeight;
-    const stroke = points[points.length - 1].total >= 0 ? '#00e540' : '#ea5a5a';
-
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    context.fillStyle = '#0f1d2e';
-    context.fillRect(0, 0, canvas.width, canvas.height);
-
-    context.beginPath();
-    context.moveTo(toX(0), toY(points[0].total));
-    for (let i = 1; i < points.length; i += 1) {
-      context.lineTo(toX(i), toY(points[i].total));
-    }
-    context.strokeStyle = stroke;
-    context.lineWidth = 3;
-    context.stroke();
-
-    const baseline = toY(0);
-    context.lineTo(toX(points.length - 1), baseline);
-    context.lineTo(toX(0), baseline);
-    context.closePath();
-    context.fillStyle = points[points.length - 1].total >= 0 ? 'rgba(0, 229, 64, 0.2)' : 'rgba(234, 90, 90, 0.2)';
-    context.fill();
-
-    points.forEach((point, index) => {
-      context.beginPath();
-      context.arc(toX(index), toY(point.total), index === points.length - 1 ? 4.5 : 2.8, 0, Math.PI * 2);
-      context.fillStyle = index === points.length - 1 ? '#ffffff' : stroke;
-      context.fill();
-    });
-
-    if (!tooltip) return;
-
-    canvas.onmousemove = (event) => {
-      const rect = canvas.getBoundingClientRect();
-      const relativeX = event.clientX - rect.left - padding.left;
-      const index = Math.max(0, Math.min(points.length - 1, Math.round((relativeX / plotWidth) * (points.length - 1))));
-      const point = points[index];
-      tooltip.textContent = index === 0 ? 'Start: Rs 0' : `Trade ${index}: Total Profit ${currency(point.total)}`;
-      tooltip.style.display = 'block';
-      tooltip.style.left = `${event.pageX + 10}px`;
-      tooltip.style.top = `${event.pageY + 10}px`;
-    };
-
-    canvas.onmouseleave = () => {
-      tooltip.style.display = 'none';
-    };
   }
 
   function renderPie(parts, total) {

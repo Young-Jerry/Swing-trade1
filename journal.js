@@ -11,6 +11,7 @@
     if (currentDate < MIN_DATE) currentDate = new Date(MIN_DATE);
 
     const dateNode = document.getElementById('journalDate');
+    const numericDateNode = document.getElementById('journalNumericDate');
     const datePicker = document.getElementById('journalDatePicker');
     const prompts = [
       { id: 'journalQ1', key: 'learned' },
@@ -72,6 +73,7 @@
       ensureEntry(currentDate);
       const entry = ensureEntry(currentDate);
       dateNode.textContent = currentDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      if (numericDateNode) numericDateNode.textContent = toInputDate(currentDate).replaceAll('-', '/');
       datePicker.value = toInputDate(currentDate);
       textNodes.forEach(({ key: promptKey, node }) => {
         if (!node) return;

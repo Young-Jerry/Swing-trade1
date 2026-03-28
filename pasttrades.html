@@ -9,13 +9,13 @@
 <body>
   <header class="header">
     <nav class="nav">
-      <div class="logo">PMS</div>
+      <div class="logo"></div>
       <ul class="nav-links">
         <li><a href="index.html">Dashboard</a></li>
-<li><a href="trades.html">Trades</a></li>
-<li><a href="longterm.html">Long-t</a></li>
+<li><a href="trades.html">trades</a></li>
+<li><a href="longterm.html">Long-Term</a></li>
 <li><a href="mf.html">SIP</a></li>
-<li><a class="active" href="pasttrades.html">Past trades</a></li>
+<li><a class="active" href="pasttrades.html">Past-Trades</a></li>
 <li><a href="analytics.html">Charts</a></li>
 <li><a href="journal.html">✏️</a></li>
 <li><a href="share_calculator.html">🧮</a></li>
@@ -26,16 +26,14 @@
   <main class="container">
     <section class="page-hero card">
       <div>
-        <h1>Past Trades Studio</h1>
-        <p class="subtitle">Select type → pick a record → enter sold price + holding days → exit with auto-calculated totals.</p>
+        <h1>Past-Trades</h1>
+        <p class="subtitle">Select type, choose record, verify qty/ltp, then exit.</p>
       </div>
-      <div class="hero-badge">✨ Interactive + Animated</div>
+      <div class="hero-badge">Historical Exit Book</div>
     </section>
 
     <section class="card section">
-      <div class="toolbar"><h3>Script Filter</h3></div>
-      <input id="pastTradeFilter" type="text" placeholder="Filter by script" />
-      <div id="pastTradesAllocation"></div>
+      <div id="pastTradeMetrics" class="summary-grid pasttrade-metrics"></div>
     </section>
 
     <section class="card section">
@@ -46,10 +44,16 @@
             <option value="trades">Trade</option>
             <option value="longterm">Long Term</option>
             <option value="sip">SIP</option>
-                      </select>
+          </select>
         </label>
         <label>Select Record
           <select id="exitRecord" required></select>
+        </label>
+        <label>Qty
+          <input id="selectedQty" type="text" readonly />
+        </label>
+        <label>LTP
+          <input id="selectedLtp" type="text" readonly />
         </label>
         <label>Sold Price
           <input id="soldPrice" type="number" min="0.01" step="0.01" required />
@@ -59,6 +63,12 @@
         </label>
         <button class="btn-primary" type="submit">Exit Selected</button>
       </form>
+    </section>
+
+    <section class="card section">
+      <div class="toolbar"><h3>Script Filter</h3></div>
+      <input id="pastTradeFilter" type="text" placeholder="Filter by search" />
+      <div id="pastTradesAllocation"></div>
     </section>
 
     
