@@ -40,7 +40,7 @@
     const current = readCash();
     const next = current + change;
     if (next < 0) {
-      window.alert('Not enough cash balance');
+      showCashAlert('Not enough cash balance.');
       return current;
     }
     setCash(next);
@@ -77,7 +77,7 @@
     };
     const nextCash = readCash() - oldDelta + safeNextDelta;
     if (nextCash < 0) {
-      window.alert('Not enough cash balance');
+      showCashAlert('Not enough cash balance.');
       return;
     }
     saveLedger(ledger);
@@ -91,7 +91,7 @@
     const [removed] = ledger.splice(index, 1);
     const nextCash = readCash() - Number(removed.delta || 0);
     if (nextCash < 0) {
-      window.alert('Not enough cash balance');
+      showCashAlert('Not enough cash balance.');
       return;
     }
     saveLedger(ledger);
@@ -158,7 +158,7 @@
       const hh = String(hours).padStart(2, '0');
       const mm = String(minutes).padStart(2, '0');
       const ss = String(seconds).padStart(2, '0');
-      timerNode.innerHTML = `<span class="market-dot ${stateClass}"></span> NEPSE Time ${hh}-${mm}-${ss}`;
+      timerNode.innerHTML = `<span class="market-dot ${stateClass}"></span> NEPSE Time ${hh}:${mm}:${ss}`;
     };
 
     tick();
@@ -196,6 +196,40 @@
     return `Rs ${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(rounded)}`;
   }
 
+
+
+  function showCashAlert(message) {
+    const text = String(message || 'Not enough cash balance.');
+    const existing = document.querySelector('.pms-inline-alert');
+    if (existing) existing.remove();
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal pms-inline-alert';
+    backdrop.innerHTML = `
+      <section class="card modal-card">
+        <h3>Cash Balance Alert</h3>
+        <p class="subtitle">${escapeHtml(text)}</p>
+        <div class="toolbar" style="justify-content:flex-end; margin-top:10px;">
+          <button class="btn-primary" type="button" data-close-alert="true">Okay</button>
+        </div>
+      </section>
+    `;
+
+    backdrop.querySelector('[data-close-alert="true"]').addEventListener('click', () => backdrop.remove());
+    backdrop.addEventListener('click', (event) => {
+      if (event.target === backdrop) backdrop.remove();
+    });
+    document.body.appendChild(backdrop);
+  }
+
+  function escapeHtml(value) {
+    return String(value || '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
   window.PmsCapital = {
     CASH_KEY,
     LEDGER_KEY,
@@ -208,6 +242,7 @@
     clearLedgerHistory,
     investedCapital,
     updateWidgets,
+    showCashAlert,
   };
 
   const ready = () => {

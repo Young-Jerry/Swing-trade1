@@ -29,10 +29,15 @@
 
   if (clearBtn) {
     clearBtn.addEventListener('click', () => {
-      const ok = window.confirm('Remove full ledger history and keep only current cash balance?');
-      if (!ok) return;
-      window.PmsCapital.clearLedgerHistory();
-      render();
+      openWebsiteConfirm({
+        title: 'Empty Ledger History',
+        message: 'Remove full ledger history and keep only current cash balance?',
+        confirmText: 'Empty History',
+        onConfirm: () => {
+          window.PmsCapital.clearLedgerHistory();
+          render();
+        },
+      });
     });
   }
 
@@ -93,6 +98,35 @@
         render();
       });
     });
+  }
+
+
+  function openWebsiteConfirm({ title, message, confirmText, onConfirm }) {
+    const existing = document.querySelector('.ledger-confirm-modal');
+    if (existing) existing.remove();
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal ledger-confirm-modal';
+    backdrop.innerHTML = `
+      <section class="card modal-card">
+        <h3>${escapeHtml(title || 'Confirm')}</h3>
+        <p class="subtitle">${escapeHtml(message || '')}</p>
+        <div class="toolbar" style="justify-content:flex-end; margin-top:12px;">
+          <button class="btn-secondary" type="button" data-cancel="true">Cancel</button>
+          <button class="btn-danger" type="button" data-confirm="true">${escapeHtml(confirmText || 'Confirm')}</button>
+        </div>
+      </section>
+    `;
+
+    backdrop.querySelector('[data-cancel="true"]').addEventListener('click', () => backdrop.remove());
+    backdrop.querySelector('[data-confirm="true"]').addEventListener('click', () => {
+      if (typeof onConfirm === 'function') onConfirm();
+      backdrop.remove();
+    });
+    backdrop.addEventListener('click', (event) => {
+      if (event.target === backdrop) backdrop.remove();
+    });
+    document.body.appendChild(backdrop);
   }
 
   function money(value) {

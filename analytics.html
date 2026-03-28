@@ -29,22 +29,20 @@
     <section class="page-heading">
       <div>
         <h1>Advanced Analytics</h1>
-        <p class="subtitle">Interactive exited-trades insights with zoom, filters and dynamic tooltips.</p>
+        <p class="subtitle">Interactive exited-trades insights with cleaner hover and precise x-axis zoom.</p>
       </div>
       
     </section>
 
     <section class="card section">
       <div class="analytics-controls">
-        <div class="toolbar analytics-filter-toolbar">
-          <h3>Trade Range</h3>
-          <div class="analytics-filter-buttons" role="group" aria-label="Trade filters">
-            <button class="btn-secondary analytics-filter-btn" type="button" data-trade-limit="10">10</button>
-            <button class="btn-secondary analytics-filter-btn" type="button" data-trade-limit="20">20</button>
-            <button class="btn-secondary analytics-filter-btn" type="button" data-trade-limit="50">50</button>
-            <button class="btn-secondary analytics-filter-btn active" type="button" data-trade-limit="ALL">ALL</button>
-          </div>
-        </div>
+
+      <div class="grid analytics-kpi-grid">
+        <article class="card stat-card"><div class="stat-label">Total Invested</div><div class="stat-value" id="analyticsTotalInvested">Rs 0</div></article>
+        <article class="card stat-card"><div class="stat-label">Total Profit</div><div class="stat-value" id="analyticsTotalProfit">Rs 0</div></article>
+        <article class="card stat-card"><div class="stat-label">ROI</div><div class="stat-value" id="analyticsRoi">0%</div></article>
+        <article class="card stat-card"><div class="stat-label">Exited Trades</div><div class="stat-value" id="analyticsTotalTrades">0</div></article>
+      </div>
 
         <div class="toolbar analytics-toggle-toolbar">
           <h3>Chart Controls</h3>

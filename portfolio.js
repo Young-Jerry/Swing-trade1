@@ -83,7 +83,7 @@
 
       const investedAmount = investedCost(record.wacc, record.qty);
       if (window.PmsCapital && window.PmsCapital.readCash() < investedAmount) {
-        window.alert('Not enough cash balance');
+        window.PmsCapital?.showCashAlert?.('Not enough cash balance.');
         return;
       }
 
