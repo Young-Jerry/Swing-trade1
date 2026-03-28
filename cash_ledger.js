@@ -2,6 +2,7 @@
   const form = document.getElementById('ledgerForm');
   const body = document.querySelector('#ledgerTable tbody');
   const cashNode = document.getElementById('ledgerCashBalance');
+  const clearBtn = document.getElementById('clearLedgerHistoryBtn');
 
   if (!form || !body) return;
 
@@ -25,6 +26,15 @@
     form.reset();
     render();
   });
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      const ok = window.confirm('Remove full ledger history and keep only current cash balance?');
+      if (!ok) return;
+      window.PmsCapital.clearLedgerHistory();
+      render();
+    });
+  }
 
   render();
 

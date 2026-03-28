@@ -81,8 +81,13 @@
       const baseFields = [record.ltp, record.qty, record.wacc];
       if (!record.script || baseFields.some((n) => !Number.isFinite(n)) || (showRanges && !Number.isFinite(record.sell1))) return;
 
-      rows.push(record);
       const investedAmount = investedCost(record.wacc, record.qty);
+      if (window.PmsCapital && window.PmsCapital.readCash() < investedAmount) {
+        window.alert('Not enough cash balance');
+        return;
+      }
+
+      rows.push(record);
       if (window.PmsCapital) window.PmsCapital.adjustCash(-investedAmount);
       persist();
       form.reset();

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Analytics | Portfolio Management System</title>
+  <title>Analytics | PMS</title>
   <link rel="stylesheet" href="styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -11,16 +11,16 @@
 <body>
   <header class="header">
     <nav class="nav">
-      <div class="logo">Portfolio Management System</div>
+      <div class="logo">PMS</div>
       <ul class="nav-links">
-        <li><a href="index.html">🏠 Dashboard</a></li>
-        <li><a href="trades.html">📈 Trades</a></li>
-        <li><a href="longterm.html">💼 Long-T</a></li>
-        <li><a href="mf.html">💰 SIP</a></li>
-        <li><a href="pasttrades.html">🧾 Past-T</a></li>
-        <li><a href="journal.html">📚 Journal</a></li>
-        <li><a href="share_calculator.html">🧮 Calculator</a></li>
-        <li><a class="active" href="analytics.html">📊Charts</a></li>
+        <li><a href="index.html">Dashboard</a></li>
+<li><a href="trades.html">Trades</a></li>
+<li><a href="longterm.html">Long-t</a></li>
+<li><a href="mf.html">SIP</a></li>
+<li><a href="pasttrades.html">Past trades</a></li>
+<li><a class="active" href="analytics.html">Charts</a></li>
+<li><a href="journal.html">✏️</a></li>
+<li><a href="share_calculator.html">🧮</a></li>
       </ul>
     </nav>
   </header>
@@ -31,33 +31,7 @@
         <h1>Advanced Analytics</h1>
         <p class="subtitle">Interactive exited-trades insights with zoom, filters and dynamic tooltips.</p>
       </div>
-      <div class="page-heading-actions">
-        <button id="resetZoomBtn" class="btn-secondary" type="button">Reset Zoom</button>
-      </div>
-    </section>
-
-    <section class="grid analytics-kpi-grid" id="analyticsKpis">
-      <article class="card stat-card">
-        <div class="stat-label">Total Profit</div>
-        <div class="stat-value" id="kpiTotalProfit">Rs 0.00</div>
-      </article>
-      <article class="card stat-card">
-        <div class="stat-label">Total Invested</div>
-        <div class="stat-value" id="kpiTotalInvested">Rs 0.00</div>
-      </article>
-      <article class="card stat-card">
-        <div class="stat-label">ROI</div>
-        <div class="stat-value" id="kpiRoi">0.00%</div>
-      </article>
-    </section>
-
-    <section class="card section analytics-summary-box" id="tradeSummaryBox">
-      <h3>Trades Summary</h3>
-      <div class="summary-grid analytics-summary-grid">
-        <div class="summary-item">Total Trades: <strong id="summaryTotalTrades">0</strong></div>
-        <div class="summary-item">Profitable Trades: <strong id="summaryWinTrades">0</strong></div>
-        <div class="summary-item">Losing Trades: <strong id="summaryLossTrades">0</strong></div>
-      </div>
+      
     </section>
 
     <section class="card section">
@@ -65,19 +39,24 @@
         <div class="toolbar analytics-filter-toolbar">
           <h3>Trade Range</h3>
           <div class="analytics-filter-buttons" role="group" aria-label="Trade filters">
-            <button class="btn-secondary analytics-filter-btn active" type="button" data-trade-limit="10">10</button>
+            <button class="btn-secondary analytics-filter-btn" type="button" data-trade-limit="10">10</button>
             <button class="btn-secondary analytics-filter-btn" type="button" data-trade-limit="20">20</button>
             <button class="btn-secondary analytics-filter-btn" type="button" data-trade-limit="50">50</button>
-            <button class="btn-secondary analytics-filter-btn" type="button" data-trade-limit="ALL">ALL</button>
+            <button class="btn-secondary analytics-filter-btn active" type="button" data-trade-limit="ALL">ALL</button>
           </div>
         </div>
 
         <div class="toolbar analytics-toggle-toolbar">
           <h3>Chart Controls</h3>
           <div class="analytics-toggle-group">
-            <label class="checkbox-line"><input id="togglePerTrade" type="checkbox" /> Per Trade Profit</label>
-            <label class="checkbox-line"><input id="toggleInvested" type="checkbox" /> Invested Amount</label>
-            <label class="checkbox-line"><input id="toggleMovingAvg" type="checkbox" /> Moving Average (5)</label>
+            <label class="checkbox-line"><input id="togglePerTrade" type="checkbox" /> Per trade profit</label>
+            <label class="checkbox-line"><input id="toggleInvested" type="checkbox" /> Invested amt</label>
+            <label class="checkbox-line"><input id="toggleMovingAvg" type="checkbox" /> Moving avg</label>
+            <label>MA Trades
+              <select id="movingAvgWindow">
+                <option value="1">1</option><option value="2">2</option><option value="5" selected>5</option><option value="10">10</option><option value="15">15</option><option value="25">25</option><option value="35">35</option><option value="50">50</option><option value="70">70</option>
+              </select>
+            </label>
           </div>
         </div>
       </div>
@@ -85,12 +64,14 @@
       <div class="analytics-chart-wrap">
         <canvas id="analyticsChart" aria-label="Advanced analytics chart" height="130"></canvas>
       </div>
+      <div class="chart-footer-controls"><button id="resetZoomBtn" class="btn-secondary" type="button">Reset Zoom</button></div>
       <p id="analyticsNoData" class="subtitle analytics-empty" hidden>No data available</p>
     </section>
 
     <footer class="subtitle" style="margin-top:16px; text-align:center;">NEPSE Explained - Sohaum Mainali</footer>
   </main>
 
+  <script defer src="capital-manager.js"></script>
   <script defer src="analytics.js"></script>
 </body>
 </html>
