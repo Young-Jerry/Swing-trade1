@@ -12,7 +12,7 @@
       <div class="logo"></div>
       <ul class="nav-links">
         <li><a href="index.html">Dashboard</a></li>
-<li><a href="trades.html">trades</a></li>
+<li><a href="trades.html">Trades</a></li>
 <li><a class="active" href="longterm.html">Long-Term</a></li>
 <li><a href="mf.html">SIP</a></li>
 <li><a href="pasttrades.html">Past-Trades</a></li>
@@ -45,9 +45,8 @@
 
     <section class="card section">
       <div class="toolbar">
-        <h3>Add Entry / ExitPosition</h3>
+        <h3>Add Entry </h3>
         <div style="display:flex;gap:8px;align-items:center;">
-          <a class="btn-secondary btn-link" href="pasttrades.html">ExitPosition</a>
           <button id="massEditBtn" class="btn-secondary" type="button">Mass Edit</button>
           <div class="save-indicator" id="saveIndicator">Saved ✓</div>
         </div>
@@ -65,7 +64,9 @@
 
     <section class="card section">
       <div class="toolbar"><h3>Script Filter</h3></div>
+      </section>
       <input id="scriptFilter" type="text" placeholder="Filter by search" />
+      <section class="card section">
       <div id="pageAllocationBreakdown"></div>
     </section>
 
@@ -75,7 +76,7 @@
           <thead>
             <tr>
               <th data-sort="script">Script</th>
-                            <th data-sort="qty">Qty</th>
+              <th data-sort="qty">Qty</th>
               <th data-sort="ltp">LTP</th>
               <th data-sort="current">Current Value</th>
               <th data-sort="pl">Total P/L</th>
